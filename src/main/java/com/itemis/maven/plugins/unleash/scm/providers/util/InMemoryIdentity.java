@@ -34,6 +34,11 @@ public class InMemoryIdentity implements Identity {
     return this.keyPair.getSignature(data);
   }
 
+  /**
+   * @deprecated following this methods deprecation in {@link Identity}
+   * @see Identity#decrypt()
+   */
+  @Deprecated
   @Override
   public boolean decrypt() {
     throw new RuntimeException("not implemented");

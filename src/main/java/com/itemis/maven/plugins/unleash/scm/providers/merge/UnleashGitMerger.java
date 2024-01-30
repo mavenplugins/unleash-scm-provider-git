@@ -275,8 +275,9 @@ public class UnleashGitMerger extends ResolveMerger {
   private MergeClient mergeClient;
 
   /**
-   * @param local
-   * @param inCore
+   * @param local       the local {@link Repository}
+   * @param inCore      see {@link UnleashGitMerger#inCore}
+   * @param mergeClient the {@link MergeClient implementation}
    */
   protected UnleashGitMerger(Repository local, boolean inCore, MergeClient mergeClient) {
     super(local);
@@ -296,7 +297,8 @@ public class UnleashGitMerger extends ResolveMerger {
   }
 
   /**
-   * @param local
+   * @param local       the local {@link Repository}
+   * @param mergeClient the {@link MergeClient implementation}
    */
   protected UnleashGitMerger(Repository local, MergeClient mergeClient) {
     this(local, false, mergeClient);
@@ -343,9 +345,9 @@ public class UnleashGitMerger extends ResolveMerger {
    * contained only stage 0. In case if inCore operation just clear the
    * history of modified files.
    *
-   * @throws IOException
-   * @throws CorruptObjectException
-   * @throws NoWorkTreeException
+   * @throws IOException            by org.eclipse.jgit
+   * @throws CorruptObjectException by org.eclipse.jgit
+   * @throws NoWorkTreeException    by org.eclipse.jgit
    * @since 3.4
    */
   @Override
@@ -450,10 +452,10 @@ public class UnleashGitMerger extends ResolveMerger {
    * @return <code>false</code> if the merge will fail because the index entry
    *         didn't match ours or the working-dir file was dirty and a
    *         conflict occurred
-   * @throws org.eclipse.jgit.errors.MissingObjectException
-   * @throws org.eclipse.jgit.errors.IncorrectObjectTypeException
-   * @throws org.eclipse.jgit.errors.CorruptObjectException
-   * @throws java.io.IOException
+   * @throws org.eclipse.jgit.errors.MissingObjectException       on appropriate git issue
+   * @throws org.eclipse.jgit.errors.IncorrectObjectTypeException on appropriate git issue
+   * @throws org.eclipse.jgit.errors.CorruptObjectException       on appropriate git issue
+   * @throws java.io.IOException                                  on appropriate git issue
    * @since 4.9
    */
   @Override
@@ -990,11 +992,10 @@ public class UnleashGitMerger extends ResolveMerger {
   /**
    * The resolve conflict way of three way merging
    *
-   * @param baseTree
-   * @param headTree
-   * @param mergeTree
-   * @param ignoreConflicts
-   *                          Controls what to do in case a content-merge is done and a
+   * @param baseTree        the base tree
+   * @param headTree        the head tree
+   * @param mergeTree       the merge tree
+   * @param ignoreConflicts Controls what to do in case a content-merge is done and a
    *                          conflict is detected. The default setting for this should be
    *                          <code>false</code>. In this case the working tree file is
    *                          filled with new content (containing conflict markers) and the
@@ -1013,7 +1014,7 @@ public class UnleashGitMerger extends ResolveMerger {
    *                          merge bases we don't want to deal with content-merge
    *                          conflicts.
    * @return whether the trees merged cleanly
-   * @throws IOException
+   * @throws IOException on appropriate git issue
    * @since 3.5
    */
   @Override
@@ -1077,7 +1078,7 @@ public class UnleashGitMerger extends ResolveMerger {
    *                          see
    *                          {@link UnleashGitMerger#mergeTrees(AbstractTreeIterator, RevTree, RevTree, boolean)}
    * @return Whether the trees merged cleanly.
-   * @throws IOException
+   * @throws IOException on appropriate git issue
    * @since 3.5
    */
   @Override
