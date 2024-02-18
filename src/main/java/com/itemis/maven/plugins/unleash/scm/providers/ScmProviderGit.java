@@ -415,7 +415,7 @@ public class ScmProviderGit implements ScmProvider {
       if (failureStatus != null) {
         StringBuilder message = new StringBuilder(
             "Could not push local changes to the remote repository due to the following error: [").append(failureStatus)
-                .append("] ");
+            .append("] ");
         if (reason != null) {
           message.append(reason);
         }
@@ -528,6 +528,8 @@ public class ScmProviderGit implements ScmProvider {
       StringBuilder message = new StringBuilder(LOG_PREFIX).append("Tag info:\n");
       message.append("\t- WORKING_DIR: ").append(this.workingDir.getAbsolutePath()).append('\n');
       message.append("\t- TAG_NAME: ").append(request.getTagName()).append('\n');
+      message.append("\t- PRE_TAG_COMMIT_MESSAGE: ").append(request.getPreTagCommitMessage()).append('\n');
+      message.append("\t- SCM_MESSAGE_PREFIX: ").append(request.getScmMessagePrefix()).append('\n');
       message.append("\t- USE_WORKING_COPY: ").append(request.tagFromWorkingCopy()).append('\n');
       if (request.tagFromWorkingCopy()) {
         message.append("\t- COMMIT_BEFORE_TAGGING: ").append(request.commitBeforeTagging()).append('\n');
@@ -541,8 +543,13 @@ public class ScmProviderGit implements ScmProvider {
 
     if (request.tagFromWorkingCopy()) {
       // 1. commit the changes (no merging because we stay local!)
-      String preTagCommitMessage = request.getPreTagCommitMessage()
-          .or("Preparation for tag creation (Tag name: '" + request.getTagName() + "').");
+      final StringBuilder defaultPreTagCommitMessage = new StringBuilder(
+          "Preparation for tag creation (Tag name: '" + request.getTagName() + "').");
+      // prepend scmMessagePrefix if needed
+      if (request.getScmMessagePrefix().isPresent()) {
+        defaultPreTagCommitMessage.insert(0, request.getScmMessagePrefix().get());
+      }
+      String preTagCommitMessage = request.getPreTagCommitMessage().or(defaultPreTagCommitMessage.toString());
       Builder builder = CommitRequest.builder().message(preTagCommitMessage);
       if (request.includeUntrackedFiles()) {
         builder.includeUntrackedFiles();

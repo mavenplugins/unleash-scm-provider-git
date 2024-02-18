@@ -65,6 +65,23 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - TBD
 
 
+## [2.3.1]
+<!-- !!! Align version in badge URLs as well !!! -->
+[![2.3.1 Badge](https://img.shields.io/nexus/r/io.github.mavenplugins/unleash-scm-provider-git?server=https://s01.oss.sonatype.org&label=Maven%20Central&queryOpt=:v=2.3.1)](https://central.sonatype.com/artifact/io.github.mavenplugins/unleash-scm-provider-git/2.3.1)
+
+### Summary
+- Enhance the tag comment to prepend with scmMessagePrefix if this is set - #2
+
+### Updates
+- pom.xml:
+  - refer to `unleash-scm-provider-api 2.11.0`
+
+- ScmProviderGit.java:
+  - method tag(TagRequest request):
+    - prepend the PreTagCommitMessage with scmMessagePrefix
+      if this is set.
+
+
 ## [2.3.0]
 <!-- !!! Align version in badge URLs as well !!! -->
 [![2.3.0 Badge](https://img.shields.io/nexus/r/io.github.mavenplugins/unleash-scm-provider-git?server=https://s01.oss.sonatype.org&label=Maven%20Central&queryOpt=:v=2.3.0)](https://central.sonatype.com/artifact/io.github.mavenplugins/unleash-scm-provider-git/2.3.0)
@@ -100,5 +117,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - This is just a dummy placeholder to make the parser of GHCICD/release-notes-from-changelog@v1 happy!
 -->
 
-[Unreleased]: https://github.com/mavenplugins/unleash-scm-provider-git/compare/v2.3.0..HEAD
+[Unreleased]: https://github.com/mavenplugins/unleash-scm-provider-git/compare/v2.3.1..HEAD
+[2.3.1]: https://github.com/mavenplugins/unleash-scm-provider-git/compare/v2.3.0..v2.3.1
 [2.3.0]: https://github.com/mavenplugins/unleash-scm-provider-git/releases/tag/v2.3.0
