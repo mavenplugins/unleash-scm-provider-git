@@ -9,6 +9,8 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.inject.Inject;
+
 import org.eclipse.jgit.api.AddCommand;
 import org.eclipse.jgit.api.CheckoutCommand;
 import org.eclipse.jgit.api.CloneCommand;
@@ -61,6 +63,7 @@ import com.itemis.maven.plugins.unleash.scm.ScmOperation;
 import com.itemis.maven.plugins.unleash.scm.ScmProvider;
 import com.itemis.maven.plugins.unleash.scm.ScmProviderInitialization;
 import com.itemis.maven.plugins.unleash.scm.annotations.ScmProviderType;
+import com.itemis.maven.plugins.unleash.scm.providers.cdi.IGitCommandFactory;
 import com.itemis.maven.plugins.unleash.scm.providers.merge.UnleashGitFullMergeStrategy;
 import com.itemis.maven.plugins.unleash.scm.providers.util.GitUtil;
 import com.itemis.maven.plugins.unleash.scm.requests.BranchRequest;
@@ -93,6 +96,8 @@ public class ScmProviderGit implements ScmProvider {
   private File workingDir;
   private List<String> additionalThingsToPush;
   private GitUtil util;
+  @Inject
+  private IGitCommandFactory gitCommandFactory;
 
   @Override
   public void initialize(final ScmProviderInitialization initialization) {
@@ -117,6 +122,11 @@ public class ScmProviderGit implements ScmProvider {
           initialization.getPassword().or(""));
     }
     this.sshSessionFactory = new GitSshSessionFactory(initialization, this.log);
+
+    if (this.log.isLoggable(Level.INFO)) {
+      this.log.info(LOG_PREFIX + "JGit version: " + Git.class.getPackage().getImplementationVersion());
+      this.log.info(LOG_PREFIX + "GitCommandFactory: " + this.gitCommandFactory.getClass().getName());
+    }
   }
 
   @Override
@@ -167,7 +177,8 @@ public class ScmProviderGit implements ScmProvider {
         this.log.fine(message.toString());
       }
 
-      CloneCommand clone = Git.cloneRepository().setDirectory(this.workingDir).setURI(request.getRemoteRepositoryUrl());
+      CloneCommand clone = this.gitCommandFactory.getCloneCommand().setDirectory(this.workingDir)
+          .setURI(request.getRemoteRepositoryUrl());
       setAuthenticationDetails(clone);
       if (!request.checkoutWholeRepository()) {
         clone.setNoCheckout(true);
@@ -197,7 +208,8 @@ public class ScmProviderGit implements ScmProvider {
       }
 
       try {
-        CheckoutCommand checkout = this.git.checkout().setStartPoint(revision).setAllPaths(false);
+        CheckoutCommand checkout = this.gitCommandFactory.getCheckoutCommand(this.git, request).setStartPoint(revision)
+            .setAllPaths(false);
         for (String path : request.getPathsToCheckout()) {
           checkout.addPath(path);
         }
@@ -224,8 +236,9 @@ public class ScmProviderGit implements ScmProvider {
         }
 
         try {
-          CheckoutCommand checkout = this.git.checkout().setName(request.getBranch().get()).setCreateBranch(true)
-              .setUpstreamMode(SetupUpstreamMode.SET_UPSTREAM).setStartPoint(startPoint);
+          CheckoutCommand checkout = this.gitCommandFactory.getCheckoutCommand(this.git, request)
+              .setName(request.getBranch().get()).setCreateBranch(true).setUpstreamMode(SetupUpstreamMode.SET_UPSTREAM)
+              .setStartPoint(startPoint);
           checkout.call();
         } catch (GitAPIException e) {
           throw new ScmException(ScmOperation.CHECKOUT, "Unable to checkout '" + request.getBranch().get()
@@ -246,7 +259,8 @@ public class ScmProviderGit implements ScmProvider {
       }
       if (hasTag(request.getTag().get())) {
         try {
-          CheckoutCommand checkout = this.git.checkout().setName(request.getTag().get());
+          CheckoutCommand checkout = this.gitCommandFactory.getCheckoutCommand(this.git, request)
+              .setName(request.getTag().get());
           checkout.call();
         } catch (GitAPIException e) {
           throw new ScmException(ScmOperation.CHECKOUT, "Unable to checkout tag '" + request.getTag().get()
@@ -270,7 +284,8 @@ public class ScmProviderGit implements ScmProvider {
         this.log.fine(message.toString());
       }
       try {
-        CheckoutCommand checkout = this.git.checkout().setName(request.getRevision().get());
+        CheckoutCommand checkout = this.gitCommandFactory.getCheckoutCommand(this.git, request)
+            .setName(request.getRevision().get());
         checkout.call();
       } catch (GitAPIException e) {
         throw new ScmException(ScmOperation.CHECKOUT,
@@ -311,7 +326,7 @@ public class ScmProviderGit implements ScmProvider {
     }
 
     // add all changes to be committed (either everything or the specified paths)
-    AddCommand add = this.git.add();
+    AddCommand add = this.gitCommandFactory.getAddCommand(this.git);
     if (request.commitAllChanges()) {
       if (request.includeUntrackedFiles()) {
         add.addFilepattern(".");
@@ -332,7 +347,8 @@ public class ScmProviderGit implements ScmProvider {
     }
 
     // commit all added changes
-    CommitCommand commit = this.git.commit().setMessage(request.getMessage()).setCommitter(this.personIdent);
+    CommitCommand commit = this.gitCommandFactory.getCommitCommand(this.git, request).setMessage(request.getMessage())
+        .setCommitter(this.personIdent);
     if (request.commitAllChanges()) {
       commit.setAll(true);
     } else {
@@ -392,7 +408,8 @@ public class ScmProviderGit implements ScmProvider {
 
     try {
       // 2. push local changes to remote repository
-      PushCommand push = this.git.push().setRemote(remoteName).setPushAll().setPushTags();
+      PushCommand push = this.gitCommandFactory.getPushCommand(this.git).setRemote(remoteName).setPushAll()
+          .setPushTags();
       setAuthenticationDetails(push);
       for (String additional : this.additionalThingsToPush) {
         push.add(additional);
@@ -455,8 +472,8 @@ public class ScmProviderGit implements ScmProvider {
     }
 
     try {
-      FetchCommand fetch = this.git.fetch().setRemote(remoteName).setTagOpt(TagOpt.AUTO_FOLLOW)
-          .setRemoveDeletedRefs(true);
+      FetchCommand fetch = this.gitCommandFactory.getFetchCommand(this.git).setRemote(remoteName)
+          .setTagOpt(TagOpt.AUTO_FOLLOW).setRemoveDeletedRefs(true);
       setAuthenticationDetails(fetch);
       fetch.call();
     } catch (GitAPIException e) {
@@ -464,7 +481,8 @@ public class ScmProviderGit implements ScmProvider {
           "Could not fetch changes from Git remote '" + remoteName + " [" + connectionUrl + "]'.", e);
     }
 
-    MergeCommand merge = this.git.merge().setFastForward(FastForwardMode.FF).setCommit(true).setMessage("Merge");
+    MergeCommand merge = this.gitCommandFactory.getMergeCommand(this.git).setFastForward(FastForwardMode.FF)
+        .setCommit(true).setMessage("Merge");
     switch (request.getMergeStrategy()) {
       case USE_LOCAL:
         merge.setStrategy(MergeStrategy.OURS);
@@ -558,8 +576,8 @@ public class ScmProviderGit implements ScmProvider {
 
       try {
         // 2. tag local revision
-        TagCommand tag = this.git.tag().setName(request.getTagName()).setMessage(request.getMessage())
-            .setAnnotated(true).setTagger(this.personIdent);
+        TagCommand tag = this.gitCommandFactory.getTagCommand(this.git, request).setName(request.getTagName())
+            .setMessage(request.getMessage()).setAnnotated(true).setTagger(this.personIdent);
         tag.call();
       } catch (GitAPIException e) {
         throw new ScmException(ScmOperation.TAG, "An error occurred during local Git tag creation.", e);
@@ -568,7 +586,8 @@ public class ScmProviderGit implements ScmProvider {
       if (!request.commitBeforeTagging()) {
         try {
           // 3. deletes the local commit that had been done for tag creation.
-          this.git.reset().setMode(ResetType.MIXED).setRef(Constants.HEAD + "~1").call();
+          this.gitCommandFactory.getResetCommand(this.git).setMode(ResetType.MIXED).setRef(Constants.HEAD + "~1")
+              .call();
         } catch (GitAPIException e) {
           throw new ScmException(ScmOperation.TAG,
               "An error occurred during local commit resetting (no pre-tag commit was requested).", e);
@@ -589,7 +608,7 @@ public class ScmProviderGit implements ScmProvider {
           String remoteName = this.util.getRemoteName(localBranchName);
           String connectionUrl = this.util.getConnectionUrlOfRemote(remoteName);
           try {
-            PushCommand push = this.git.push().setRemote(remoteName).add(tagPushName);
+            PushCommand push = this.gitCommandFactory.getPushCommand(this.git).setRemote(remoteName).add(tagPushName);
             setAuthenticationDetails(push);
             push.call();
             newRevision = getLatestRemoteRevision();
@@ -635,7 +654,8 @@ public class ScmProviderGit implements ScmProvider {
     }
 
     try {
-      LsRemoteCommand lsRemote = this.git.lsRemote().setRemote(remoteName).setTags(true);
+      LsRemoteCommand lsRemote = this.gitCommandFactory.getLsRemoteCommand(this.git).setRemote(remoteName)
+          .setTags(true);
       setAuthenticationDetails(lsRemote);
 
       String tagRefName = GitUtil.TAG_NAME_PREFIX + tagName;
@@ -668,7 +688,8 @@ public class ScmProviderGit implements ScmProvider {
         this.log.fine(LOG_PREFIX + "Fetching remote tag");
       }
       try {
-        FetchCommand fetch = this.git.fetch().setRemote(remoteName).setTagOpt(TagOpt.FETCH_TAGS);
+        FetchCommand fetch = this.gitCommandFactory.getFetchCommand(this.git).setRemote(remoteName)
+            .setTagOpt(TagOpt.FETCH_TAGS);
         setAuthenticationDetails(fetch);
         fetch.call();
       } catch (GitAPIException e) {
@@ -689,7 +710,8 @@ public class ScmProviderGit implements ScmProvider {
 
       try {
         // 2. delete the tag locally
-        DeleteTagCommand deleteTag = this.git.tagDelete().setTags(GitUtil.TAG_NAME_PREFIX + request.getTagName());
+        DeleteTagCommand deleteTag = this.gitCommandFactory.getDeleteTagCommand(this.git, request)
+            .setTags(GitUtil.TAG_NAME_PREFIX + request.getTagName());
         deleteTag.call();
       } catch (GitAPIException e) {
         throw new ScmException(ScmOperation.DELETE_TAG,
@@ -702,7 +724,7 @@ public class ScmProviderGit implements ScmProvider {
         if (hasRemoteTag) {
           String tagPushName = ":" + GitUtil.TAG_NAME_PREFIX + request.getTagName();
           if (request.push()) {
-            PushCommand push = this.git.push().setRemote(remoteName).add(tagPushName);
+            PushCommand push = this.gitCommandFactory.getPushCommand(this.git).setRemote(remoteName).add(tagPushName);
             setAuthenticationDetails(push);
             push.call();
           } else {
@@ -761,8 +783,9 @@ public class ScmProviderGit implements ScmProvider {
 
       try {
         // 2. branch from WC
-        CreateBranchCommand branch = this.git.branchCreate().setName(request.getBranchName())
-            .setUpstreamMode(SetupUpstreamMode.TRACK).setStartPoint(request.getRevision().or(Constants.HEAD));
+        CreateBranchCommand branch = this.gitCommandFactory.getCreateBranchCommand(this.git, request)
+            .setName(request.getBranchName()).setUpstreamMode(SetupUpstreamMode.TRACK)
+            .setStartPoint(request.getRevision().or(Constants.HEAD));
         branch.call();
       } catch (GitAPIException e) {
         throw new ScmException(ScmOperation.BRANCH, "Could not create local branch '" + request.getBranchName()
@@ -772,7 +795,8 @@ public class ScmProviderGit implements ScmProvider {
       // 3. deletes the local commit that had been done for branch creation.
       if (!request.commitBeforeBranching()) {
         try {
-          this.git.reset().setMode(ResetType.MIXED).setRef(Constants.HEAD + "~1").call();
+          this.gitCommandFactory.getResetCommand(this.git).setMode(ResetType.MIXED).setRef(Constants.HEAD + "~1")
+              .call();
         } catch (GitAPIException e) {
           throw new ScmException(ScmOperation.BRANCH,
               "An error occurred during local commit resetting (no pre-branch commit was requested).", e);
@@ -792,7 +816,8 @@ public class ScmProviderGit implements ScmProvider {
           String remoteName = this.util.getRemoteName(localBranchName);
           String connectionUrl = this.util.getConnectionUrlOfRemote(remoteName);
           try {
-            PushCommand push = this.git.push().setRemote(remoteName).add(branchPushName);
+            PushCommand push = this.gitCommandFactory.getPushCommand(this.git).setRemote(remoteName)
+                .add(branchPushName);
             setAuthenticationDetails(push);
             push.call();
             newRevision = getLatestRemoteRevision();
@@ -836,7 +861,8 @@ public class ScmProviderGit implements ScmProvider {
     }
 
     try {
-      LsRemoteCommand lsRemote = this.git.lsRemote().setRemote(remoteName).setHeads(true);
+      LsRemoteCommand lsRemote = this.gitCommandFactory.getLsRemoteCommand(this.git).setRemote(remoteName)
+          .setHeads(true);
       setAuthenticationDetails(lsRemote);
       Collection<Ref> branches = lsRemote.call();
       for (Ref branch : branches) {
@@ -871,8 +897,8 @@ public class ScmProviderGit implements ScmProvider {
 
     if (this.util.hasLocalBranch(request.getBranchName())) {
       try {
-        this.git.branchDelete().setBranchNames(GitUtil.HEADS_NAME_PREFIX + request.getBranchName()).setForce(true)
-            .call();
+        this.gitCommandFactory.getDeleteBranchCommand(this.git, request)
+            .setBranchNames(GitUtil.HEADS_NAME_PREFIX + request.getBranchName()).setForce(true).call();
       } catch (GitAPIException e) {
         e.printStackTrace();
       }
@@ -881,7 +907,7 @@ public class ScmProviderGit implements ScmProvider {
     if (hasBranch(request.getBranchName())) {
       if (request.push()) {
         try {
-          PushCommand push = this.git.push().setRemote(remoteName)
+          PushCommand push = this.gitCommandFactory.getPushCommand(this.git).setRemote(remoteName)
               .add(":" + GitUtil.HEADS_NAME_PREFIX + request.getBranchName());
           setAuthenticationDetails(push);
           push.call();
@@ -929,7 +955,7 @@ public class ScmProviderGit implements ScmProvider {
     }
 
     try {
-      RevertCommand revert = this.git.revert();
+      RevertCommand revert = this.gitCommandFactory.getRevertCommand(this.git, request);
 
       List<RevCommit> commitsToRevert = this.util.resolveCommitRange(request.getToRevision(),
           request.getFromRevision());
@@ -978,7 +1004,7 @@ public class ScmProviderGit implements ScmProvider {
   @Override
   public String getLocalRevision() {
     try {
-      RevCommit revCommit = this.git.log().call().iterator().next();
+      RevCommit revCommit = this.gitCommandFactory.getLogCommand(this.git).call().iterator().next();
       return revCommit.getName();
     } catch (GitAPIException e) {
       throw new IllegalStateException("Could not determine the last revision commit of the local repository.", e);
@@ -992,7 +1018,8 @@ public class ScmProviderGit implements ScmProvider {
       String remoteName = this.util.getRemoteName(localBranchName);
       String remoteNameBranch = this.util.getRemoteBranchName(localBranchName);
 
-      LsRemoteCommand lsRemote = this.git.lsRemote().setHeads(true).setRemote(remoteName);
+      LsRemoteCommand lsRemote = this.gitCommandFactory.getLsRemoteCommand(this.git).setHeads(true)
+          .setRemote(remoteName);
       setAuthenticationDetails(lsRemote);
       Collection<Ref> branches = lsRemote.call();
       for (Ref branch : branches) {
@@ -1034,7 +1061,7 @@ public class ScmProviderGit implements ScmProvider {
     }
 
     try {
-      LogCommand logCommand = this.git.log();
+      LogCommand logCommand = this.gitCommandFactory.getLogCommand(this.git);
       if (request.getMessageFilters().isEmpty()) {
         // set the limit of commits to be retrieved only if no filters are provided since the user wants to see the
         // specified number of commits but some could be filtered out
@@ -1096,7 +1123,7 @@ public class ScmProviderGit implements ScmProvider {
     if (tag.isPresent()) {
       try {
         String tagName = GitUtil.TAG_NAME_PREFIX + tag.get();
-        for (Ref ref : this.git.tagList().call()) {
+        for (Ref ref : this.gitCommandFactory.getListTagCommand(this.git).call()) {
           if (Objects.equal(tagName, ref.getName())) {
             Ref peeledRef = this.git.getRepository().getRefDatabase().peel(ref);
             return MoreObjects.firstNonNull(peeledRef.getPeeledObjectId(), peeledRef.getObjectId());
