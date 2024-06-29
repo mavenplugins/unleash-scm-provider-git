@@ -48,6 +48,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.MergeResult;
 import org.eclipse.jgit.api.MergeResult.MergeStatus;
@@ -98,16 +99,11 @@ public class UnleashGitRevertCommand extends RevertCommand {
 
   private ProgressMonitor monitor = NullProgressMonitor.INSTANCE;
 
-  /**
-   * <p>
-   * Constructor for RevertCommand.
-   * </p>
-   *
-   * @param repo
-   *               the {@link org.eclipse.jgit.lib.Repository}
-   */
-  protected UnleashGitRevertCommand(Repository repo) {
+  private final String scmMessagePrefix;
+
+  public UnleashGitRevertCommand(Repository repo, String scmMessagePrefix) {
     super(repo);
+    this.scmMessagePrefix = scmMessagePrefix;
   }
 
   /**
@@ -168,6 +164,15 @@ public class UnleashGitRevertCommand extends RevertCommand {
         String newMessage = shortMessage + "\n\n" //$NON-NLS-1$
             + "This reverts commit " + srcCommit.getId().getName() //$NON-NLS-1$
             + ".\n"; //$NON-NLS-1$
+        // @patch Unleash: prepend scmMessagePrefix if it is not blank {
+        if (StringUtils.isNotBlank(this.scmMessagePrefix)) {
+          newMessage = this.scmMessagePrefix
+              + (StringUtils.endsWith(this.scmMessagePrefix, System.lineSeparator() + System.lineSeparator())
+                  || StringUtils.endsWith(this.scmMessagePrefix, "\n\n")
+                      ? StringUtils.replace(newMessage, "\n\n", "\n", 1)
+                      : newMessage);
+        }
+        // @patch Unleash }
         if (merger.merge(headCommit, srcParent)) {
           if (AnyObjectId.equals(headCommit.getTree().getId(), merger.getResultTreeId())) {
             continue;
@@ -186,14 +191,20 @@ public class UnleashGitRevertCommand extends RevertCommand {
         } else {
           this.unmergedPaths = merger.getUnmergedPaths();
           Map<String, MergeFailureReason> failingPaths = merger.getFailingPaths();
+          // @patch Unleash: fix incompatible types error
+          Map<String, org.eclipse.jgit.merge.MergeResult<?>> lowLevelResults = merger.getMergeResults();
           if (failingPaths != null) {
             this.failingResult = new MergeResult(null, merger.getBaseCommitId(),
                 new ObjectId[] { headCommit.getId(), srcParent.getId() }, MergeStatus.FAILED, this.strategy,
-                merger.getMergeResults(), failingPaths, null);
+                // @patch Unleash: fix incompatible types error
+                // merger.getMergeResults(), failingPaths, null);
+                lowLevelResults, failingPaths, null);
           } else {
             this.failingResult = new MergeResult(null, merger.getBaseCommitId(),
                 new ObjectId[] { headCommit.getId(), srcParent.getId() }, MergeStatus.CONFLICTING, this.strategy,
-                merger.getMergeResults(), failingPaths, null);
+                // @patch Unleash: fix incompatible types error
+                // merger.getMergeResults(), failingPaths, null);
+                lowLevelResults, failingPaths, null);
           }
           if (!merger.failed() && !this.unmergedPaths.isEmpty()) {
             String message = new MergeMessageFormatter().formatWithConflicts(newMessage, merger.getUnmergedPaths());

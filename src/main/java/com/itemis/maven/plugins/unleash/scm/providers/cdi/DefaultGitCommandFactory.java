@@ -3,6 +3,9 @@
  */
 package com.itemis.maven.plugins.unleash.scm.providers.cdi;
 
+import javax.inject.Inject;
+import javax.inject.Named;
+
 import org.eclipse.jgit.api.AddCommand;
 import org.eclipse.jgit.api.CheckoutCommand;
 import org.eclipse.jgit.api.CloneCommand;
@@ -21,6 +24,7 @@ import org.eclipse.jgit.api.ResetCommand;
 import org.eclipse.jgit.api.RevertCommand;
 import org.eclipse.jgit.api.TagCommand;
 
+import com.itemis.maven.plugins.unleash.scm.providers.revert.UnleashGitRevertCommand;
 import com.itemis.maven.plugins.unleash.scm.requests.BranchRequest;
 import com.itemis.maven.plugins.unleash.scm.requests.CheckoutRequest;
 import com.itemis.maven.plugins.unleash.scm.requests.CommitRequest;
@@ -35,6 +39,10 @@ import com.itemis.maven.plugins.unleash.scm.requests.TagRequest;
  * @author mhoffrog
  */
 public class DefaultGitCommandFactory implements IGitCommandFactory {
+
+  @Inject
+  @Named("scmMessagePrefix")
+  private String scmMessagePrefix;
 
   /**
    * Supposed to be constructed by injection only as well as to leverage inheritance.
@@ -114,7 +122,7 @@ public class DefaultGitCommandFactory implements IGitCommandFactory {
 
   @Override
   public RevertCommand getRevertCommand(final Git git, final RevertCommitsRequest request) {
-    return git != null ? git.revert() : null;
+    return git != null ? new UnleashGitRevertCommand(git.getRepository(), this.scmMessagePrefix) : null;
   }
 
   @Override
