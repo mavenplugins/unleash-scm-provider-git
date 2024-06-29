@@ -11,6 +11,7 @@ import java.util.logging.Logger;
 
 import javax.inject.Inject;
 
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jgit.api.AddCommand;
 import org.eclipse.jgit.api.CheckoutCommand;
 import org.eclipse.jgit.api.CloneCommand;
@@ -313,6 +314,8 @@ public class ScmProviderGit implements ScmProvider {
       return request.push() ? getLatestRemoteRevision() : getLocalRevision();
     }
 
+    final String logMessage = StringUtils.trim(request.getMessage());
+
     if (this.log.isLoggable(Level.FINE)) {
       StringBuilder message = new StringBuilder(LOG_PREFIX + "Commit info:\n");
       message.append("\t- WORKING_DIR: ").append(this.workingDir.getAbsolutePath()).append('\n');
@@ -322,6 +325,7 @@ public class ScmProviderGit implements ScmProvider {
       if (!request.commitAllChanges()) {
         message.append("\n\t- FILES: ").append(Joiner.on(',').join(request.getPathsToCommit()));
       }
+      message.append("\n\t- LOG MESSAGE: [").append(logMessage).append("]");
       this.log.fine(message.toString());
     }
 
@@ -347,7 +351,7 @@ public class ScmProviderGit implements ScmProvider {
     }
 
     // commit all added changes
-    CommitCommand commit = this.gitCommandFactory.getCommitCommand(this.git, request).setMessage(request.getMessage())
+    CommitCommand commit = this.gitCommandFactory.getCommitCommand(this.git, request).setMessage(logMessage)
         .setCommitter(this.personIdent);
     if (request.commitAllChanges()) {
       commit.setAll(true);
@@ -362,7 +366,7 @@ public class ScmProviderGit implements ScmProvider {
       RevCommit result = commit.call();
       newRevision = result.getName();
     } catch (GitAPIException e) {
-      throw new ScmException(ScmOperation.DELETE_TAG, "Could not commit chanhes of local repository.", e);
+      throw new ScmException(ScmOperation.DELETE_TAG, "Could not commit changes of local repository.", e);
     }
 
     if (request.push()) {
@@ -406,15 +410,32 @@ public class ScmProviderGit implements ScmProvider {
         .mergeClient(request.getMergeClient().orNull()).build();
     update(ur);
 
+    // 2. push local changes to remote repository
+    PushCommand push = this.gitCommandFactory.getPushCommand(this.git).setRemote(remoteName).setPushAll().setPushTags();
+    for (String additional : this.additionalThingsToPush) {
+      push.add(additional);
+    }
+    callPush(push, ScmOperation.PUSH, "Could not push local commits to the remote repository");
+    this.additionalThingsToPush.clear();
+
+    String newRemoteRevision = getLatestRemoteRevision();
+    if (this.log.isLoggable(Level.INFO)) {
+      this.log.info(LOG_PREFIX + "Push finished successfully. New remote revision is: " + newRemoteRevision);
+    }
+    return newRemoteRevision;
+  }
+
+  /**
+   * @param push
+   * @param scmOperation
+   * @param baseErrorMessage
+   */
+  private void callPush(final PushCommand push, final ScmOperation scmOperation, final String baseErrorMessage) {
+    final ByteArrayOutputStream out = new ByteArrayOutputStream();
+    push.setOutputStream(out);
     try {
-      // 2. push local changes to remote repository
-      PushCommand push = this.gitCommandFactory.getPushCommand(this.git).setRemote(remoteName).setPushAll()
-          .setPushTags();
       setAuthenticationDetails(push);
-      for (String additional : this.additionalThingsToPush) {
-        push.add(additional);
-      }
-      Iterable<PushResult> results = push.call();
+      final Iterable<PushResult> results = push.call();
 
       Status failureStatus = null;
       String reason = null;
@@ -428,26 +449,28 @@ public class ScmProviderGit implements ScmProvider {
           }
         }
       }
-
+      final String remoteOutput = out.toString();
       if (failureStatus != null) {
-        StringBuilder message = new StringBuilder(
-            "Could not push local changes to the remote repository due to the following error: [").append(failureStatus)
-            .append("] ");
+        StringBuilder message = new StringBuilder(baseErrorMessage).append(" due to the following error: [")
+            .append(failureStatus).append("] ");
         if (reason != null) {
           message.append(reason);
         }
-        throw new ScmException(ScmOperation.PUSH, message.toString());
+        if (StringUtils.isNotBlank(remoteOutput)) {
+          message.append("\nRemote details:\n").append(remoteOutput);
+        } else {
+          message.append("\nNo further details provided by the remote Git server.");
+        }
+        throw new ScmException(scmOperation, message.toString());
       }
-      this.additionalThingsToPush.clear();
+      if (StringUtils.isNotBlank(remoteOutput) && this.log.isLoggable(Level.INFO)) {
+        for (String line : StringUtils.split(remoteOutput, StringUtils.LF)) {
+          this.log.info(LOG_PREFIX + "remote: " + StringUtils.remove(line, StringUtils.CR));
+        }
+      }
     } catch (GitAPIException e) {
-      throw new ScmException(ScmOperation.PUSH, "Could not push local commits to remote repository", e);
+      throw new ScmException(scmOperation, baseErrorMessage, e);
     }
-
-    String newRemoteRevision = getLatestRemoteRevision();
-    if (this.log.isLoggable(Level.INFO)) {
-      this.log.info(LOG_PREFIX + "Push finished successfully. New remote revision is: " + newRemoteRevision);
-    }
-    return newRemoteRevision;
   }
 
   @Override
@@ -607,15 +630,10 @@ public class ScmProviderGit implements ScmProvider {
           String localBranchName = this.util.getCurrentBranchName();
           String remoteName = this.util.getRemoteName(localBranchName);
           String connectionUrl = this.util.getConnectionUrlOfRemote(remoteName);
-          try {
-            PushCommand push = this.gitCommandFactory.getPushCommand(this.git).setRemote(remoteName).add(tagPushName);
-            setAuthenticationDetails(push);
-            push.call();
-            newRevision = getLatestRemoteRevision();
-          } catch (GitAPIException e) {
-            throw new ScmException(ScmOperation.PUSH, "Unable to push locally created tag '" + request.getTagName()
-                + "' to remote '" + remoteName + "[" + connectionUrl + "]+'.", e);
-          }
+          PushCommand push = this.gitCommandFactory.getPushCommand(this.git).setRemote(remoteName).add(tagPushName);
+          callPush(push, ScmOperation.PUSH, "Unable to push locally created tag '" + request.getTagName()
+              + "' to remote '" + remoteName + "[" + connectionUrl + "]'");
+          newRevision = getLatestRemoteRevision();
         }
       } else {
         newRevision = getLocalRevision();
@@ -718,22 +736,17 @@ public class ScmProviderGit implements ScmProvider {
             "An error occurred during the local deletion of tag '" + request.getTagName() + "'.", e);
       }
 
-      try {
-        // 3. if the tag exists in the remote repository the remote tag gets either deletet or will be scheduled for
-        // deletion on next push
-        if (hasRemoteTag) {
-          String tagPushName = ":" + GitUtil.TAG_NAME_PREFIX + request.getTagName();
-          if (request.push()) {
-            PushCommand push = this.gitCommandFactory.getPushCommand(this.git).setRemote(remoteName).add(tagPushName);
-            setAuthenticationDetails(push);
-            push.call();
-          } else {
-            this.additionalThingsToPush.add(tagPushName);
-          }
+      // 3. if the tag exists in the remote repository the remote tag gets either deleted or will be scheduled for
+      // deletion on next push
+      if (hasRemoteTag) {
+        String tagPushName = ":" + GitUtil.TAG_NAME_PREFIX + request.getTagName();
+        if (request.push()) {
+          PushCommand push = this.gitCommandFactory.getPushCommand(this.git).setRemote(remoteName).add(tagPushName);
+          callPush(push, ScmOperation.DELETE_TAG, "An error occurred during the deletion of tag '"
+              + request.getTagName() + "' from remote '" + remoteName + "[" + remoteUrl + "]'");
+        } else {
+          this.additionalThingsToPush.add(tagPushName);
         }
-      } catch (GitAPIException e) {
-        throw new ScmException(ScmOperation.DELETE_TAG, "An error occurred during the deletion of tag '"
-            + request.getTagName() + "' from remote '" + remoteName + "[" + remoteUrl + "]'.", e);
       }
     }
 
@@ -815,16 +828,10 @@ public class ScmProviderGit implements ScmProvider {
           String localBranchName = this.util.getCurrentBranchName();
           String remoteName = this.util.getRemoteName(localBranchName);
           String connectionUrl = this.util.getConnectionUrlOfRemote(remoteName);
-          try {
-            PushCommand push = this.gitCommandFactory.getPushCommand(this.git).setRemote(remoteName)
-                .add(branchPushName);
-            setAuthenticationDetails(push);
-            push.call();
-            newRevision = getLatestRemoteRevision();
-          } catch (GitAPIException e) {
-            throw new ScmException(ScmOperation.PUSH, "Unable to push locally created branch '"
-                + request.getBranchName() + "' to remote '" + remoteName + "[" + connectionUrl + "]+'.", e);
-          }
+          PushCommand push = this.gitCommandFactory.getPushCommand(this.git).setRemote(remoteName).add(branchPushName);
+          callPush(push, ScmOperation.PUSH, "Unable to push locally created branch '" + request.getBranchName()
+              + "' to remote '" + remoteName + "[" + connectionUrl + "]'");
+          newRevision = getLatestRemoteRevision();
         }
       } else {
         newRevision = getLocalRevision();
@@ -906,14 +913,10 @@ public class ScmProviderGit implements ScmProvider {
 
     if (hasBranch(request.getBranchName())) {
       if (request.push()) {
-        try {
-          PushCommand push = this.gitCommandFactory.getPushCommand(this.git).setRemote(remoteName)
-              .add(":" + GitUtil.HEADS_NAME_PREFIX + request.getBranchName());
-          setAuthenticationDetails(push);
-          push.call();
-        } catch (GitAPIException e) {
-          e.printStackTrace();
-        }
+        PushCommand push = this.gitCommandFactory.getPushCommand(this.git).setRemote(remoteName)
+            .add(":" + GitUtil.HEADS_NAME_PREFIX + request.getBranchName());
+        callPush(push, ScmOperation.DELETE_BRANCH, "An error occurred during the deletion of branch '"
+            + request.getBranchName() + "' from remote '" + remoteName + "[" + remoteUrl + "]'");
       } else {
         this.additionalThingsToPush.add(":" + GitUtil.HEADS_NAME_PREFIX + request.getBranchName());
       }
