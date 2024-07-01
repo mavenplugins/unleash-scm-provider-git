@@ -1,11 +1,13 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?><project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
     <groupId>io.github.mavenplugins</groupId>
     <artifactId>org-parent</artifactId>
     <version>3</version>
-    <relativePath/>
+    <relativePath />
   </parent>
 
   <artifactId>unleash-scm-provider-git</artifactId>
@@ -53,7 +55,6 @@
     <version.unleash-scm-provider-api>2.11.0</version.unleash-scm-provider-api>
     <!-- 3rd PARTY -->
     <version.jgit>5.0.2.201807311906-r</version.jgit>
-    <version.jsch>0.1.54</version.jsch>
     <version.jsch-agentproxy>0.0.9</version.jsch-agentproxy>
     <version.slf4j>1.7.2</version.slf4j>
     <!-- TEST -->
@@ -72,13 +73,15 @@
     <!-- 3rd PARTY DEPENDENCIES -->
     <dependency>
       <groupId>com.jcraft</groupId>
-      <artifactId>jsch</artifactId>
-      <version>${version.jsch}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.jcraft</groupId>
       <artifactId>jsch.agentproxy.jsch</artifactId>
       <version>${version.jsch-agentproxy}</version>
+      <exclusions>
+        <!-- Exclude com.jcraft:jsch since it is overlapping with dependency of org.eclipse.jgit:org.eclipse.jgit -->
+        <exclusion>
+          <groupId>com.jcraft</groupId>
+          <artifactId>jsch</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>com.jcraft</groupId>
