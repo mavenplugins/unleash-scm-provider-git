@@ -3,9 +3,6 @@
  */
 package com.itemis.maven.plugins.unleash.scm.providers.cdi;
 
-import javax.inject.Inject;
-import javax.inject.Named;
-
 import org.eclipse.jgit.api.AddCommand;
 import org.eclipse.jgit.api.CheckoutCommand;
 import org.eclipse.jgit.api.CloneCommand;
@@ -32,6 +29,9 @@ import com.itemis.maven.plugins.unleash.scm.requests.DeleteBranchRequest;
 import com.itemis.maven.plugins.unleash.scm.requests.DeleteTagRequest;
 import com.itemis.maven.plugins.unleash.scm.requests.RevertCommitsRequest;
 import com.itemis.maven.plugins.unleash.scm.requests.TagRequest;
+
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
 
 /**
  * Default implementation of {@link IGitCommandFactory}

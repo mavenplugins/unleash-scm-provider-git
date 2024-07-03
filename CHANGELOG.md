@@ -65,18 +65,25 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - TBD
 
 
-## [2.4.1]
+## [3.0.0]
 <!-- !!! Align version in badge URLs as well !!! -->
-[![2.4.1 Badge](https://img.shields.io/nexus/r/io.github.mavenplugins/unleash-scm-provider-git?server=https://s01.oss.sonatype.org&label=Maven%20Central&queryOpt=:v=2.4.1)](https://central.sonatype.com/artifact/io.github.mavenplugins/unleash-scm-provider-git/2.4.1)
+[![3.0.0 Badge](https://img.shields.io/nexus/r/io.github.mavenplugins/unleash-scm-provider-git?server=https://s01.oss.sonatype.org&label=Maven%20Central&queryOpt=:v=3.0.0)](https://central.sonatype.com/artifact/io.github.mavenplugins/unleash-scm-provider-git/3.0.0)
 
 ### Summary
+- Update dependency to `unleash-scm-provider-api 3.0.0`
+  - => work for Java 8, 11, 17 and 21 by CDI WELD 4.0.3.Final with Jakarta Inject API
 - Provide probable output messages from remote server for push commands - #4
 - Add UnleashGitRevertCommand to ensure `scmMessagePrefix` is considered for revert log messages if it is set - #5
+
+### Compatibility
+- 👉 This release requires to be used with `unleash-maven-plugin >= v3.0.0` only! It will NOT work with former versions of `unleash-maven-plugin`<br>
+  Reason: CDI dependencies did have been changed from Javax to Jakarta EE
 
 ### Updates
 - pom.xml:
   - remove explicit dependency to `com.jcraft:jsch`
   - exclude dependency to `com.jcraft:jsch` from `com.jcraft:jsch.agentproxy.jsch` since it overlaps with the dependency from `org.eclipse.jgit:org.eclipse.jgit`
+  - refer to `unleash-scm-provider-api 3.0.0`
 
 - ScmProviderGit.java:
   - move push result handling to new method callPush(...)
@@ -147,7 +154,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - This is just a dummy placeholder to make the parser of GHCICD/release-notes-from-changelog@v1 happy!
 -->
 
-[Unreleased]: https://github.com/mavenplugins/unleash-scm-provider-git/compare/v2.4.1..HEAD
-[2.4.1]: https://github.com/mavenplugins/unleash-scm-provider-git/compare/v2.4.0..v2.4.1
+[Unreleased]: https://github.com/mavenplugins/unleash-scm-provider-git/compare/v3.0.0..HEAD
+[3.0.0]: https://github.com/mavenplugins/unleash-scm-provider-git/compare/v2.4.0..v3.0.0
 [2.4.0]: https://github.com/mavenplugins/unleash-scm-provider-git/compare/v2.3.0..v2.4.0
 [2.3.0]: https://github.com/mavenplugins/unleash-scm-provider-git/releases/tag/v2.3.0

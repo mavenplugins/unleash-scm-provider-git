@@ -9,8 +9,6 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import javax.inject.Inject;
-
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jgit.api.AddCommand;
 import org.eclipse.jgit.api.CheckoutCommand;
@@ -84,6 +82,8 @@ import com.itemis.maven.plugins.unleash.scm.results.DiffObject;
 import com.itemis.maven.plugins.unleash.scm.results.DiffResult;
 import com.itemis.maven.plugins.unleash.scm.results.HistoryCommit;
 import com.itemis.maven.plugins.unleash.scm.results.HistoryResult;
+
+import jakarta.inject.Inject;
 
 @ScmProviderType("git")
 public class ScmProviderGit implements ScmProvider {
