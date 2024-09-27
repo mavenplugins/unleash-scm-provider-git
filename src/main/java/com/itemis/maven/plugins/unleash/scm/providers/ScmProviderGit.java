@@ -56,6 +56,7 @@ import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import com.google.common.io.Closeables;
 import com.itemis.maven.plugins.unleash.scm.ScmException;
 import com.itemis.maven.plugins.unleash.scm.ScmOperation;
@@ -82,6 +83,7 @@ import com.itemis.maven.plugins.unleash.scm.results.DiffObject;
 import com.itemis.maven.plugins.unleash.scm.results.DiffResult;
 import com.itemis.maven.plugins.unleash.scm.results.HistoryCommit;
 import com.itemis.maven.plugins.unleash.scm.results.HistoryResult;
+import com.itemis.maven.plugins.unleash.scm.utils.FileToRelativePath;
 
 import jakarta.inject.Inject;
 
@@ -95,6 +97,7 @@ public class ScmProviderGit implements ScmProvider {
   private CredentialsProvider credentialsProvider;
   private SshSessionFactory sshSessionFactory;
   private File workingDir;
+  private String workingDirParentToGitWorkTree;
   private List<String> additionalThingsToPush;
   private GitUtil util;
   @Inject
@@ -110,6 +113,7 @@ public class ScmProviderGit implements ScmProvider {
       try {
         FileRepositoryBuilder builder = new FileRepositoryBuilder();
         Repository repo = builder.findGitDir(this.workingDir).build();
+        this.workingDirParentToGitWorkTree = new FileToRelativePath(repo.getWorkTree()).apply(this.workingDir);
         this.git = Git.wrap(repo);
         this.personIdent = new PersonIdent(repo);
         this.util = new GitUtil(this.git);
@@ -127,6 +131,17 @@ public class ScmProviderGit implements ScmProvider {
     if (this.log.isLoggable(Level.INFO)) {
       this.log.info(LOG_PREFIX + "JGit version: " + Git.class.getPackage().getImplementationVersion());
       this.log.info(LOG_PREFIX + "GitCommandFactory: " + this.gitCommandFactory.getClass().getName());
+    }
+    if (this.log.isLoggable(Level.FINE)) {
+      StringBuilder message = new StringBuilder(LOG_PREFIX).append("WorkingDir Info:\n");
+      message.append("\t- GIT_DIR: \"").append(this.git.getRepository().getDirectory().getAbsolutePath())
+          .append("\"\n");
+      message.append("\t- GIT_WORKTREE: \"").append(this.git.getRepository().getWorkTree().getAbsolutePath())
+          .append("\"\n");
+      message.append("\t- WORKING_DIR: \"").append(this.workingDir.getAbsolutePath()).append("\"\n");
+      message.append("\t- WORKING_DIR_PARENT_TO_WORKTREE: \"").append(this.workingDirParentToGitWorkTree)
+          .append("\"\n");
+      this.log.fine(message.toString());
     }
   }
 
@@ -307,7 +322,8 @@ public class ScmProviderGit implements ScmProvider {
       this.log.info(LOG_PREFIX + "Committing local changes.");
     }
 
-    if (!this.util.isDirty(request.getPathsToCommit())) {
+    final Set<String> pathsToCommitRelativizedToWorkTree = relativizePathsToWorkTree(request.getPathsToCommit());
+    if (!this.util.isDirty(pathsToCommitRelativizedToWorkTree)) {
       if (this.log.isLoggable(Level.INFO)) {
         this.log.info(LOG_PREFIX + "Nothing to commit here.");
       }
@@ -323,7 +339,7 @@ public class ScmProviderGit implements ScmProvider {
       message.append("\t- PUSH: ").append(request.push()).append('\n');
       message.append("\t- COMMIT_ALL_CHANGES: ").append(request.commitAllChanges());
       if (!request.commitAllChanges()) {
-        message.append("\n\t- FILES: ").append(Joiner.on(',').join(request.getPathsToCommit()));
+        message.append("\n\t- FILES: ").append(Joiner.on(',').join(pathsToCommitRelativizedToWorkTree));
       }
       message.append("\n\t- LOG MESSAGE: [").append(logMessage).append("]");
       this.log.fine(message.toString());
@@ -340,7 +356,7 @@ public class ScmProviderGit implements ScmProvider {
         }
       }
     } else {
-      for (String path : request.getPathsToCommit()) {
+      for (String path : pathsToCommitRelativizedToWorkTree) {
         add.addFilepattern(path);
       }
     }
@@ -356,7 +372,7 @@ public class ScmProviderGit implements ScmProvider {
     if (request.commitAllChanges()) {
       commit.setAll(true);
     } else {
-      for (String path : request.getPathsToCommit()) {
+      for (String path : pathsToCommitRelativizedToWorkTree) {
         commit.setOnly(path);
       }
     }
@@ -381,6 +397,14 @@ public class ScmProviderGit implements ScmProvider {
     }
 
     return newRevision;
+  }
+
+  private Set<String> relativizePathsToWorkTree(Set<String> pathsRelativeToWorkingDir) {
+    final Set<String> ret = Sets.newHashSet();
+    for (String pathRelativeToWorkingDir : pathsRelativeToWorkingDir) {
+      ret.add(this.workingDirParentToGitWorkTree + pathRelativeToWorkingDir);
+    }
+    return ret;
   }
 
   @Override
