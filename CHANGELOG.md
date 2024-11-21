@@ -40,29 +40,78 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 <!--
 ## [Unreleased]
 
-### Additions
+### 🚨 Removed
 - TBD
 
-### Changes
+### 💥 Breaking
 - TBD
 
-### Deprecated
+### 📢 Deprecated
 - TBD
 
-###	Removals
+### 🚀 New Features
 - TBD
 
-### Fixes
+### 🐛 Fixes
 - TBD
 
-###	Security
+### ✨ Improvements
 - TBD
+
+### 🔧 Internal Changes
+- TBD
+
+### 🚦 Tests
+- TBD
+
+### 📦 Updates
+- TBD
+
+### 🔒 Security
+- TBD
+
+### 📝 Documentation Updates
+- TBD
+
 -->
 
 ## [Unreleased]
 
 ### Changes
 - TBD
+
+
+## [3.2.0]
+<!-- !!! Align version in badge URLs as well !!! -->
+[![3.2.0 Badge](https://img.shields.io/nexus/r/io.github.mavenplugins/unleash-scm-provider-git?server=https://s01.oss.sonatype.org&label=Maven%20Central&queryOpt=:v=3.2.0)](https://central.sonatype.com/artifact/io.github.mavenplugins/unleash-scm-provider-git/3.2.0)
+
+### Summary
+- Enable JGit BuiltinLFS by option `-DscmGit.enableJGitBuiltinLFS`<br>
+  or if git config `filter.lfs.useJGitBuiltin` is set `true` - #7<br>
+
+### 🚀 New Features
+- Enable JGit BuiltinLFS by option `-DscmGit.enableJGitBuiltinLFS`<br>
+  or if git config `filter.lfs.useJGitBuiltin` is set `true` - #7<br>
+
+### 📦 Updates
+- pom.xml:
+  - add dependency to `org.eclipse.jgit:org.eclipse.jgit.lfs`
+
+### 🔧 Internal Changes
+- ScmProviderGit.java:
+  - restructure code to allow specific JUnit testing without a repo being checked out
+  - add log for JGit built in enabled status
+- GitUtil.java:
+  - add method enableJGitBuiltinLFSIfDefined(final Repository repository)
+  - call this method from cTor
+  - enhance cTor by logger parameter
+
+### 🚦 Tests
+- GitSshSessionFactoryTest.java:
+  - Revive commented tests
+  - add test resources required
+- GitScmTestUtil.java:
+  - add as helper util for tests
 
 
 ## [3.1.0]
@@ -72,13 +121,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Summary
 - Fix issue raised by workflow step `SetNextDevVersion` for Git SCM projects. - #6<br>
 
+### 💥 Breaking
+  ❗👉 Requires `unleash-scm-provider-api` version `3.2.0` or later❗
+
 ### 🐛 Fixes
 - Fix issue raised by workflow step `SetNextDevVersion` for Git SCM projects. - #6<br>
   If the Maven project base dir is within a sub folder of the git checkout directory,
   then the next dev modified POMs did not get recognized as changed files to be commited.<br>
-  ❗👉 Requires `unleash-scm-provider-api` version `3.2.0` or later❗
 
-### Updates
+### 📦 Updates
 - pom.xml:
   - update dependency `unleash-scm-provider-api` to version `3.2.0`
 - ScmProviderGit.java:
@@ -187,7 +238,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - This is just a dummy placeholder to make the parser of GHCICD/release-notes-from-changelog@v1 happy!
 -->
 
-[Unreleased]: https://github.com/mavenplugins/unleash-scm-provider-git/compare/v3.1.0..HEAD
+[Unreleased]: https://github.com/mavenplugins/unleash-scm-provider-git/compare/v3.2.0..HEAD
+[3.2.0]: https://github.com/mavenplugins/unleash-scm-provider-git/compare/v3.1.0..v3.2.0
 [3.1.0]: https://github.com/mavenplugins/unleash-scm-provider-git/compare/v3.0.1..v3.1.0
 [3.0.1]: https://github.com/mavenplugins/unleash-scm-provider-git/compare/v3.0.0..v3.0.1
 [3.0.0]: https://github.com/mavenplugins/unleash-scm-provider-git/compare/v2.4.0..v3.0.0
