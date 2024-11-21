@@ -113,8 +113,8 @@ public class ScmProviderGit implements ScmProvider {
       try {
         FileRepositoryBuilder builder = new FileRepositoryBuilder();
         Repository repo = builder.findGitDir(this.workingDir).build();
-        this.workingDirParentToGitWorkTree = new FileToRelativePath(repo.getWorkTree()).apply(this.workingDir);
         this.git = Git.wrap(repo);
+        initWorkingDirParentToGitWorkTree();
         this.personIdent = new PersonIdent(repo);
         this.util = new GitUtil(this.git);
       } catch (IOException e) {
@@ -130,16 +130,32 @@ public class ScmProviderGit implements ScmProvider {
 
     if (this.log.isLoggable(Level.INFO)) {
       this.log.info(LOG_PREFIX + "JGit version: " + Git.class.getPackage().getImplementationVersion());
-      this.log.info(LOG_PREFIX + "GitCommandFactory: " + this.gitCommandFactory.getClass().getName());
+      this.log.info(LOG_PREFIX + "GitCommandFactory: " + this.gitCommandFactory != null
+          ? this.gitCommandFactory.getClass().getName()
+          : "NOT injected");
     }
+    logWorkingDirInfo();
+  }
+
+  private void initWorkingDirParentToGitWorkTree() {
+    this.workingDirParentToGitWorkTree = new FileToRelativePath(this.git.getRepository().getWorkTree())
+        .apply(this.workingDir);
+  }
+
+  private void logWorkingDirInfo() {
     if (this.log.isLoggable(Level.FINE)) {
+      final String noRepoMessage = "No repo checked out yet";
       StringBuilder message = new StringBuilder(LOG_PREFIX).append("WorkingDir Info:\n");
-      message.append("\t- GIT_DIR: \"").append(this.git.getRepository().getDirectory().getAbsolutePath())
+      final boolean isRepoCheckedOut = this.git != null && this.git.getRepository() != null;
+      message.append("\t- GIT_DIR: \"")
+          .append(isRepoCheckedOut ? this.git.getRepository().getDirectory().getAbsolutePath() : noRepoMessage)
           .append("\"\n");
-      message.append("\t- GIT_WORKTREE: \"").append(this.git.getRepository().getWorkTree().getAbsolutePath())
+      message.append("\t- GIT_WORKTREE: \"")
+          .append(isRepoCheckedOut ? this.git.getRepository().getWorkTree().getAbsolutePath() : noRepoMessage)
           .append("\"\n");
       message.append("\t- WORKING_DIR: \"").append(this.workingDir.getAbsolutePath()).append("\"\n");
-      message.append("\t- WORKING_DIR_PARENT_TO_WORKTREE: \"").append(this.workingDirParentToGitWorkTree)
+      message.append("\t- WORKING_DIR_PARENT_TO_WORKTREE: \"")
+          .append(this.workingDirParentToGitWorkTree != null ? this.workingDirParentToGitWorkTree : noRepoMessage)
           .append("\"\n");
       this.log.fine(message.toString());
     }
@@ -201,6 +217,8 @@ public class ScmProviderGit implements ScmProvider {
       }
       this.git = clone.call();
       this.util = new GitUtil(this.git);
+      initWorkingDirParentToGitWorkTree();
+      logWorkingDirInfo();
 
       if (this.log.isLoggable(Level.FINE)) {
         this.log.fine(LOG_PREFIX + "Cloning remote repository finished successfully.\n");
@@ -1263,4 +1281,5 @@ public class ScmProviderGit implements ScmProvider {
       }
     });
   }
+
 }
