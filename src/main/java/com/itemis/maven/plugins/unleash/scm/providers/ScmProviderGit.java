@@ -50,6 +50,7 @@ import org.eclipse.jgit.transport.SshTransport;
 import org.eclipse.jgit.transport.TagOpt;
 import org.eclipse.jgit.transport.Transport;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
+import org.eclipse.jgit.util.LfsFactory;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.MoreObjects;
@@ -116,7 +117,7 @@ public class ScmProviderGit implements ScmProvider {
         this.git = Git.wrap(repo);
         initWorkingDirParentToGitWorkTree();
         this.personIdent = new PersonIdent(repo);
-        this.util = new GitUtil(this.git);
+        this.util = new GitUtil(this.git, this.log);
       } catch (IOException e) {
         e.printStackTrace();
       }
@@ -130,9 +131,8 @@ public class ScmProviderGit implements ScmProvider {
 
     if (this.log.isLoggable(Level.INFO)) {
       this.log.info(LOG_PREFIX + "JGit version: " + Git.class.getPackage().getImplementationVersion());
-      this.log.info(LOG_PREFIX + "GitCommandFactory: " + this.gitCommandFactory != null
-          ? this.gitCommandFactory.getClass().getName()
-          : "NOT injected");
+      this.log.info(LOG_PREFIX + "GitCommandFactory: "
+          + (this.gitCommandFactory != null ? this.gitCommandFactory.getClass().getName() : "NOT injected"));
     }
     logWorkingDirInfo();
   }
@@ -143,6 +143,9 @@ public class ScmProviderGit implements ScmProvider {
   }
 
   private void logWorkingDirInfo() {
+    this.log.info(LOG_PREFIX + "JGit BuiltinLFS enabled: " + // nl
+        (LfsFactory.getInstance().isAvailable()
+            && LfsFactory.getInstance().isEnabled(this.git != null ? this.git.getRepository() : null)));
     if (this.log.isLoggable(Level.FINE)) {
       final String noRepoMessage = "No repo checked out yet";
       StringBuilder message = new StringBuilder(LOG_PREFIX).append("WorkingDir Info:\n");
@@ -216,7 +219,7 @@ public class ScmProviderGit implements ScmProvider {
         clone.setNoCheckout(true);
       }
       this.git = clone.call();
-      this.util = new GitUtil(this.git);
+      this.util = new GitUtil(this.git, this.log);
       initWorkingDirParentToGitWorkTree();
       logWorkingDirInfo();
 

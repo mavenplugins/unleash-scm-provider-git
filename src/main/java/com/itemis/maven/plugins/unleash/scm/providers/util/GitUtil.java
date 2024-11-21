@@ -3,15 +3,20 @@ package com.itemis.maven.plugins.unleash.scm.providers.util;
 import java.io.IOException;
 import java.util.List;
 import java.util.Set;
+import java.util.logging.Logger;
 
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.ListBranchCommand.ListMode;
 import org.eclipse.jgit.api.LogCommand;
 import org.eclipse.jgit.api.StatusCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.lfs.BuiltinLFS;
+import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
+import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.StoredConfig;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
@@ -24,13 +29,53 @@ import com.itemis.maven.plugins.unleash.scm.ScmException;
 import com.itemis.maven.plugins.unleash.scm.ScmOperation;
 
 public class GitUtil {
+  public static final String SYSPROP_ENABLE_JGIT_BUILTIN_LFS = "scmGit.enableJGitBuiltinLFS";
   public static final String TAG_NAME_PREFIX = "refs/tags/";
   public static final String HEADS_NAME_PREFIX = "refs/heads/";
 
-  private Git git;
+  private final Git git;
+  private final Logger log;
 
-  public GitUtil(Git git) {
+  public GitUtil(Git git, Logger log) {
     this.git = git;
+    this.log = log;
+    enableJGitBuiltinLFSIfDefined(this.git.getRepository());
+  }
+
+  /**
+   * Enable JGit built in LFS, if:
+   * 1. {@link #SYSPROP_ENABLE_JGIT_BUILTIN_LFS} is defined true
+   * or
+   * 2. git config has filter.lfs.useJGitBuiltin true
+   *
+   * In case 1. this method will enforce local git config to set filter.lfs.useJGitBuiltin true
+   *
+   * @param repository
+   */
+  private void enableJGitBuiltinLFSIfDefined(final Repository repository) {
+    if (repository == null) {
+      return;
+    }
+    final StoredConfig gitconfig = repository.getConfig();
+    boolean useJGitBuiltin = false;
+    final String propVal = System.getProperty(SYSPROP_ENABLE_JGIT_BUILTIN_LFS);
+    if ("".equals(propVal) || Boolean.valueOf(propVal)) {
+      // Enforce to set local config
+      useJGitBuiltin = true;
+      gitconfig.setBoolean(ConfigConstants.CONFIG_FILTER_SECTION, ConfigConstants.CONFIG_SECTION_LFS,
+          ConfigConstants.CONFIG_KEY_USEJGITBUILTIN, true);
+      try {
+        gitconfig.save();
+      } catch (IOException e) {
+        this.log.warning("Failed to save git config: " + e);
+      }
+    } else {
+      useJGitBuiltin = gitconfig.getBoolean(ConfigConstants.CONFIG_FILTER_SECTION, ConfigConstants.CONFIG_SECTION_LFS,
+          ConfigConstants.CONFIG_KEY_USEJGITBUILTIN, false);
+    }
+    if (useJGitBuiltin) {
+      BuiltinLFS.register();
+    }
   }
 
   public boolean isDirty(Set<String> paths) throws ScmException {
