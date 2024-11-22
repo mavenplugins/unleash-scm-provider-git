@@ -3,14 +3,12 @@ package com.itemis.maven.plugins.unleash.scm.providers.util;
 import java.io.IOException;
 import java.util.List;
 import java.util.Set;
-import java.util.logging.Logger;
 
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.ListBranchCommand.ListMode;
 import org.eclipse.jgit.api.LogCommand;
 import org.eclipse.jgit.api.StatusCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
-import org.eclipse.jgit.lfs.BuiltinLFS;
 import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
@@ -34,11 +32,9 @@ public class GitUtil {
   public static final String HEADS_NAME_PREFIX = "refs/heads/";
 
   private final Git git;
-  private final Logger log;
 
-  public GitUtil(Git git, Logger log) {
+  public GitUtil(Git git) {
     this.git = git;
-    this.log = log;
     enableJGitBuiltinLFSIfDefined(this.git.getRepository());
   }
 
@@ -64,17 +60,12 @@ public class GitUtil {
       useJGitBuiltin = true;
       gitconfig.setBoolean(ConfigConstants.CONFIG_FILTER_SECTION, ConfigConstants.CONFIG_SECTION_LFS,
           ConfigConstants.CONFIG_KEY_USEJGITBUILTIN, true);
-      try {
-        gitconfig.save();
-      } catch (IOException e) {
-        this.log.warning("Failed to save git config: " + e);
-      }
     } else {
       useJGitBuiltin = gitconfig.getBoolean(ConfigConstants.CONFIG_FILTER_SECTION, ConfigConstants.CONFIG_SECTION_LFS,
           ConfigConstants.CONFIG_KEY_USEJGITBUILTIN, false);
     }
     if (useJGitBuiltin) {
-      BuiltinLFS.register();
+      JGitBuiltinLFSWrapper.register();
     }
   }
 

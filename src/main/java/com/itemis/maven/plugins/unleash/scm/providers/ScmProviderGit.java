@@ -117,7 +117,7 @@ public class ScmProviderGit implements ScmProvider {
         this.git = Git.wrap(repo);
         initWorkingDirParentToGitWorkTree();
         this.personIdent = new PersonIdent(repo);
-        this.util = new GitUtil(this.git, this.log);
+        this.util = new GitUtil(this.git);
       } catch (IOException e) {
         e.printStackTrace();
       }
@@ -219,7 +219,7 @@ public class ScmProviderGit implements ScmProvider {
         clone.setNoCheckout(true);
       }
       this.git = clone.call();
-      this.util = new GitUtil(this.git, this.log);
+      this.util = new GitUtil(this.git);
       initWorkingDirParentToGitWorkTree();
       logWorkingDirInfo();
 
