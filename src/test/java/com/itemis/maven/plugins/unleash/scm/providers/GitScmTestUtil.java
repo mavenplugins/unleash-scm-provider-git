@@ -23,4 +23,8 @@ public class GitScmTestUtil {
     return new String(Files.readAllBytes(f.toPath()));
   }
 
+  public static boolean isGithubAction() {
+    return "true".equalsIgnoreCase(System.getenv("GITHUB_ACTIONS"));
+  }
+
 }
