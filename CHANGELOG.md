@@ -96,6 +96,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### 📦 Updates
 - pom.xml:
   - add dependency to `org.eclipse.jgit:org.eclipse.jgit.lfs`
+  - bump junit version to `4.13.1`
 
 ### 🔧 Internal Changes
 - ScmProviderGit.java:

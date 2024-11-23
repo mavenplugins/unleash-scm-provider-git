@@ -61,7 +61,7 @@
     <version.jsch-agentproxy>0.0.9</version.jsch-agentproxy>
     <version.slf4j>1.7.2</version.slf4j>
     <!-- TEST -->
-    <version.junit>4.12</version.junit>
+    <version.junit>4.13.1</version.junit>
     <version.mockito-all>1.10.19</version.mockito-all>
   </properties>
 
