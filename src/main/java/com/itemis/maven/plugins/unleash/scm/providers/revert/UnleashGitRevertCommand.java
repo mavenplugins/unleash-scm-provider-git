@@ -174,7 +174,7 @@ public class UnleashGitRevertCommand extends RevertCommand {
         }
         // @patch Unleash }
         if (merger.merge(headCommit, srcParent)) {
-          if (AnyObjectId.equals(headCommit.getTree().getId(), merger.getResultTreeId())) {
+          if (AnyObjectId.isEqual(headCommit.getTree().getId(), merger.getResultTreeId())) {
             continue;
           }
           DirCacheCheckout dco = new DirCacheCheckout(this.repo, headCommit.getTree(), this.repo.lockDirCache(),

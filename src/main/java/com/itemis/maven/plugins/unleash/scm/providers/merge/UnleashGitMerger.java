@@ -44,7 +44,6 @@
  */
 package com.itemis.maven.plugins.unleash.scm.providers.merge;
 
-import static org.eclipse.jgit.lib.Constants.CHARACTER_ENCODING;
 import static org.eclipse.jgit.lib.Constants.OBJ_BLOB;
 
 import java.io.BufferedOutputStream;
@@ -56,6 +55,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -334,7 +335,7 @@ public class UnleashGitMerger extends ResolveMerger {
       this.modifiedFiles.add(fileName);
     }
     for (Map.Entry<String, DirCacheEntry> entry : this.toBeCheckedOut.entrySet()) {
-      DirCacheCheckout.checkoutEntry(this.db, entry.getValue(), this.reader);
+      DirCacheCheckout.checkoutEntry(this.db, entry.getValue(), this.reader, false, null);
       this.modifiedFiles.add(entry.getKey());
     }
   }
@@ -363,7 +364,7 @@ public class UnleashGitMerger extends ResolveMerger {
       String mpath = mpathsIt.next();
       DirCacheEntry entry = dc.getEntry(mpath);
       if (entry != null) {
-        DirCacheCheckout.checkoutEntry(this.db, entry, this.reader);
+        DirCacheCheckout.checkoutEntry(this.db, entry, this.reader, false, null);
       }
       mpathsIt.remove();
     }
@@ -379,7 +380,7 @@ public class UnleashGitMerger extends ResolveMerger {
    * @param len
    * @return the entry which was added to the index
    */
-  private DirCacheEntry add(byte[] path, CanonicalTreeParser p, int stage, long lastMod, long len) {
+  private DirCacheEntry add(byte[] path, CanonicalTreeParser p, int stage, Instant lastMod, long len) {
     if (p != null && !p.getEntryFileMode().equals(FileMode.TREE)) {
       DirCacheEntry e = new DirCacheEntry(path, stage);
       e.setFileMode(p.getEntryFileMode());
@@ -405,7 +406,7 @@ public class UnleashGitMerger extends ResolveMerger {
     DirCacheEntry newEntry = new DirCacheEntry(e.getPathString(), e.getStage());
     newEntry.setFileMode(e.getFileMode());
     newEntry.setObjectId(e.getObjectId());
-    newEntry.setLastModified(e.getLastModified());
+    newEntry.setLastModified(e.getLastModifiedInstant());
     newEntry.setLength(e.getLength());
     this.builder.add(newEntry);
     return newEntry;
@@ -516,16 +517,16 @@ public class UnleashGitMerger extends ResolveMerger {
             }
             // we know about length and lastMod only after we have written the new content.
             // This will happen later. Set these values to 0 for know.
-            DirCacheEntry e = add(this.tw.getRawPath(), theirs, DirCacheEntry.STAGE_0, 0, 0);
+            DirCacheEntry e = add(this.tw.getRawPath(), theirs, DirCacheEntry.STAGE_0, Instant.EPOCH, 0);
             this.toBeCheckedOut.put(this.tw.getPathString(), e);
           }
           return true;
         } else {
           // FileModes are not mergeable. We found a conflict on modes.
           // For conflicting entries we don't know lastModified and length.
-          add(this.tw.getRawPath(), base, DirCacheEntry.STAGE_1, 0, 0);
-          add(this.tw.getRawPath(), ours, DirCacheEntry.STAGE_2, 0, 0);
-          add(this.tw.getRawPath(), theirs, DirCacheEntry.STAGE_3, 0, 0);
+          add(this.tw.getRawPath(), base, DirCacheEntry.STAGE_1, Instant.EPOCH, 0);
+          add(this.tw.getRawPath(), ours, DirCacheEntry.STAGE_2, Instant.EPOCH, 0);
+          add(this.tw.getRawPath(), theirs, DirCacheEntry.STAGE_3, Instant.EPOCH, 0);
           this.unmergedPaths.add(this.tw.getPathString());
           this.mergeResults.put(this.tw.getPathString(), new MergeResult<RawText>(Collections.<RawText> emptyList()));
         }
@@ -555,7 +556,7 @@ public class UnleashGitMerger extends ResolveMerger {
         // we know about length and lastMod only after we have written
         // the new content.
         // This will happen later. Set these values to 0 for know.
-        DirCacheEntry e = add(this.tw.getRawPath(), theirs, DirCacheEntry.STAGE_0, 0, 0);
+        DirCacheEntry e = add(this.tw.getRawPath(), theirs, DirCacheEntry.STAGE_0, Instant.EPOCH, 0);
         if (e != null) {
           this.toBeCheckedOut.put(this.tw.getPathString(), e);
         }
@@ -581,18 +582,18 @@ public class UnleashGitMerger extends ResolveMerger {
       // detected later
       if (nonTree(modeO) && !nonTree(modeT)) {
         if (nonTree(modeB)) {
-          add(this.tw.getRawPath(), base, DirCacheEntry.STAGE_1, 0, 0);
+          add(this.tw.getRawPath(), base, DirCacheEntry.STAGE_1, Instant.EPOCH, 0);
         }
-        add(this.tw.getRawPath(), ours, DirCacheEntry.STAGE_2, 0, 0);
+        add(this.tw.getRawPath(), ours, DirCacheEntry.STAGE_2, Instant.EPOCH, 0);
         this.unmergedPaths.add(this.tw.getPathString());
         this.enterSubtree = false;
         return true;
       }
       if (nonTree(modeT) && !nonTree(modeO)) {
         if (nonTree(modeB)) {
-          add(this.tw.getRawPath(), base, DirCacheEntry.STAGE_1, 0, 0);
+          add(this.tw.getRawPath(), base, DirCacheEntry.STAGE_1, Instant.EPOCH, 0);
         }
-        add(this.tw.getRawPath(), theirs, DirCacheEntry.STAGE_3, 0, 0);
+        add(this.tw.getRawPath(), theirs, DirCacheEntry.STAGE_3, Instant.EPOCH, 0);
         this.unmergedPaths.add(this.tw.getPathString());
         this.enterSubtree = false;
         return true;
@@ -618,9 +619,9 @@ public class UnleashGitMerger extends ResolveMerger {
 
       // Don't attempt to resolve submodule link conflicts
       if (isGitLink(modeO) || isGitLink(modeT)) {
-        add(this.tw.getRawPath(), base, DirCacheEntry.STAGE_1, 0, 0);
-        add(this.tw.getRawPath(), ours, DirCacheEntry.STAGE_2, 0, 0);
-        add(this.tw.getRawPath(), theirs, DirCacheEntry.STAGE_3, 0, 0);
+        add(this.tw.getRawPath(), base, DirCacheEntry.STAGE_1, Instant.EPOCH, 0);
+        add(this.tw.getRawPath(), ours, DirCacheEntry.STAGE_2, Instant.EPOCH, 0);
+        add(this.tw.getRawPath(), theirs, DirCacheEntry.STAGE_3, Instant.EPOCH, 0);
         this.unmergedPaths.add(this.tw.getPathString());
         return true;
       }
@@ -638,9 +639,9 @@ public class UnleashGitMerger extends ResolveMerger {
       // OURS or THEIRS has been deleted
       if (modeO != 0 && !this.tw.idEqual(T_BASE, T_OURS) || modeT != 0 && !this.tw.idEqual(T_BASE, T_THEIRS)) {
 
-        add(this.tw.getRawPath(), base, DirCacheEntry.STAGE_1, 0, 0);
-        add(this.tw.getRawPath(), ours, DirCacheEntry.STAGE_2, 0, 0);
-        DirCacheEntry e = add(this.tw.getRawPath(), theirs, DirCacheEntry.STAGE_3, 0, 0);
+        add(this.tw.getRawPath(), base, DirCacheEntry.STAGE_1, Instant.EPOCH, 0);
+        add(this.tw.getRawPath(), ours, DirCacheEntry.STAGE_2, Instant.EPOCH, 0);
+        DirCacheEntry e = add(this.tw.getRawPath(), theirs, DirCacheEntry.STAGE_3, Instant.EPOCH, 0);
 
         // OURS was deleted checkout THEIRS
         if (modeO == 0) {
@@ -755,9 +756,9 @@ public class UnleashGitMerger extends ResolveMerger {
       // A conflict occurred, the file will contain conflict markers
       // the index will be populated with the three stages and the
       // workdir (if used) contains the halfway merged content.
-      add(this.tw.getRawPath(), base, DirCacheEntry.STAGE_1, 0, 0);
-      add(this.tw.getRawPath(), ours, DirCacheEntry.STAGE_2, 0, 0);
-      add(this.tw.getRawPath(), theirs, DirCacheEntry.STAGE_3, 0, 0);
+      add(this.tw.getRawPath(), base, DirCacheEntry.STAGE_1, Instant.EPOCH, 0);
+      add(this.tw.getRawPath(), ours, DirCacheEntry.STAGE_2, Instant.EPOCH, 0);
+      add(this.tw.getRawPath(), theirs, DirCacheEntry.STAGE_3, Instant.EPOCH, 0);
       this.mergeResults.put(this.tw.getPathString(), result);
       return;
     }
@@ -772,7 +773,7 @@ public class UnleashGitMerger extends ResolveMerger {
     dce.setFileMode(newMode == FileMode.MISSING.getBits() ? FileMode.REGULAR_FILE : FileMode.fromBits(newMode));
     if (mergedFile != null) {
       long len = mergedFile.length();
-      dce.setLastModified(mergedFile.lastModified());
+      dce.setLastModified(Instant.ofEpochMilli(mergedFile.lastModified()));
       dce.setLength((int) len);
       InputStream is = new FileInputStream(mergedFile);
       try {
@@ -806,7 +807,7 @@ public class UnleashGitMerger extends ResolveMerger {
     OutputStream os = null;
     try {
       os = new BufferedOutputStream(new FileOutputStream(of));
-      new MergeFormatter().formatMerge(os, result, Arrays.asList(this.commitNames), CHARACTER_ENCODING);
+      new MergeFormatter().formatMerge(os, result, Arrays.asList(this.commitNames), StandardCharsets.UTF_8);
     } finally {
       Closeables.close(os, true);
     }
@@ -816,7 +817,7 @@ public class UnleashGitMerger extends ResolveMerger {
   private ObjectId insertMergeResult(MergeResult<RawText> result) throws IOException {
     TemporaryBuffer.LocalFile buf = new TemporaryBuffer.LocalFile(this.db.getDirectory(), 10 << 20);
     try {
-      new MergeFormatter().formatMerge(buf, result, Arrays.asList(this.commitNames), CHARACTER_ENCODING);
+      new MergeFormatter().formatMerge(buf, result, Arrays.asList(this.commitNames), StandardCharsets.UTF_8);
       buf.close();
       InputStream in = null;
       try {
