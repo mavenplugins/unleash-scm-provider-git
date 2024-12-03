@@ -30,6 +30,7 @@ public class GitUtil {
   public static final String SYSPROP_ENABLE_JGIT_BUILTIN_LFS = "scmGit.enableJGitBuiltinLFS";
   public static final String TAG_NAME_PREFIX = "refs/tags/";
   public static final String HEADS_NAME_PREFIX = "refs/heads/";
+  public static final String SSH_PUBLIC_KEY_AUTHENTICATION = "publickey";
 
   private final Git git;
 

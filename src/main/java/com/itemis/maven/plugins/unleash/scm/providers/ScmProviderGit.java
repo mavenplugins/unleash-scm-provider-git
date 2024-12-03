@@ -65,6 +65,7 @@ import com.itemis.maven.plugins.unleash.scm.ScmProvider;
 import com.itemis.maven.plugins.unleash.scm.ScmProviderInitialization;
 import com.itemis.maven.plugins.unleash.scm.annotations.ScmProviderType;
 import com.itemis.maven.plugins.unleash.scm.providers.cdi.IGitCommandFactory;
+import com.itemis.maven.plugins.unleash.scm.providers.logging.JavaLoggerSLF4JAdapter;
 import com.itemis.maven.plugins.unleash.scm.providers.merge.UnleashGitFullMergeStrategy;
 import com.itemis.maven.plugins.unleash.scm.providers.util.GitUtil;
 import com.itemis.maven.plugins.unleash.scm.requests.BranchRequest;
@@ -106,7 +107,7 @@ public class ScmProviderGit implements ScmProvider {
 
   @Override
   public void initialize(final ScmProviderInitialization initialization) {
-    this.log = initialization.getLogger().or(Logger.getLogger(ScmProvider.class.getName()));
+    this.log = initialization.getLogger().or(JavaLoggerSLF4JAdapter.getLogger(getClass()));
     this.workingDir = initialization.getWorkingDirectory();
     this.additionalThingsToPush = Lists.newArrayList();
 
@@ -127,7 +128,7 @@ public class ScmProviderGit implements ScmProvider {
       this.credentialsProvider = new UsernamePasswordCredentialsProvider(initialization.getUsername().get(),
           initialization.getPassword().or(""));
     }
-    this.sshSessionFactory = new GitSshSessionFactory(initialization, this.log);
+    this.sshSessionFactory = new ScmProviderAwareSshdSessionFactory(initialization);
 
     if (this.log.isLoggable(Level.INFO)) {
       this.log.info(LOG_PREFIX + "JGit version: " + Git.class.getPackage().getImplementationVersion());
@@ -171,7 +172,7 @@ public class ScmProviderGit implements ScmProvider {
     }
   }
 
-  public void testConnection(String repositoryUrl) throws ScmException {
+  public Collection<Ref> testConnection(String repositoryUrl) throws ScmException {
     if (this.log.isLoggable(Level.INFO)) {
       this.log.info(ScmProviderGit.LOG_PREFIX + "Testing repository connection (URL: " + repositoryUrl + ").");
     }
@@ -184,6 +185,7 @@ public class ScmProviderGit implements ScmProvider {
       if (result.isEmpty()) {
         throw new ScmException(ScmOperation.INFO, "No connection could be established to repository: " + repositoryUrl);
       }
+      return result;
     } catch (GitAPIException e) {
       throw new ScmException(ScmOperation.INFO, "No connection could be established to repository: " + repositoryUrl,
           e);
