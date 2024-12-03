@@ -1,123 +1,163 @@
 package com.itemis.maven.plugins.unleash.scm.providers;
 
-import java.io.IOException;
-import java.util.Hashtable;
-import java.util.logging.Logger;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.Collection;
+
+import org.apache.commons.lang3.StringUtils;
+import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.util.FS;
-import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Optional;
 import com.itemis.maven.plugins.unleash.scm.ScmProviderInitialization;
-import com.jcraft.jsch.JSch;
-import com.jcraft.jsch.agentproxy.RemoteIdentityRepository;
 
 public class GitSshSessionFactoryTest {
   @Mock
   private FS mockFS;
   @Mock
   private ScmProviderInitialization mockInitialization;
-  @Mock
-  private Logger mockLogger;
-  private GitSshSessionFactory sessionFactory;
-  private JSch sshClient;
-  private boolean connectorAvailable;
+  // @Mock
+  // private Logger mockLogger;
 
-  private static String privateRSAPEMKey;
-  private static String privateRSAOpenSSHKey;
+  private ScmProviderGit scmProviderGit;
+
+  private static String privateTestRepoOpenSSHKey;
+  private static String privateTestRepoPEMKey;
+  private static String privateTestRepoPassphrase = StringUtils
+      .defaultIfBlank(System.getenv("TEST_REPO_KEY_PASSPHRASE"), StringUtils.EMPTY);
+
+  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(GitSshSessionFactoryTest.class);
+
+  private static final String FILE_BASE_PATH = "target/test-classes/com/itemis/maven/plugins/unleash/scm/providers/GitSshSessionFactoryTest/";
+  private static final String FILE_BASE_URL = "file:" + FILE_BASE_PATH;
+  private static final String FILE_BASE_PATH_SSH = FILE_BASE_PATH + "_ssh/";
+
+  @Rule
+  public MonitorRule monitor = new MonitorRule(LOGGER);
 
   @BeforeClass
   public static void beforeClass() throws IOException {
     final Class<GitSshSessionFactoryTest> clazz = GitSshSessionFactoryTest.class;
-    privateRSAPEMKey = GitScmTestUtil.readResourceFileToString(clazz, "passphrase_rsa_pem.key");
-    privateRSAOpenSSHKey = GitScmTestUtil.readResourceFileToString(clazz, "passphrase_rsa_openssh.key");
+    privateTestRepoOpenSSHKey = GitScmTestUtil.readResourceFileToString(clazz,
+        "git_ssh_test_repo_ecdsa521_openssh.key");
+    privateTestRepoPEMKey = GitScmTestUtil.readResourceFileToString(clazz, "git_ssh_test_repo_ecdsa521_pem.key");
   }
 
   @Before
-  public void before() {
+  public void beforeMethod() {
+    // Run this test only on GHA or if key passphrase is configured
+    Assume.assumeTrue(GitScmTestUtil.isGithubAction() || StringUtils.isNotBlank(privateTestRepoPassphrase));
+    // Init before each test method
     MockitoAnnotations.initMocks(this);
-    // reset this before every tests b/c it's static :(
-    JSch.setConfig(new Hashtable<Object, Object>());
-
-    this.sessionFactory = new GitSshSessionFactory(this.mockInitialization, this.mockLogger) {
-      @Override
-      boolean isConnectorAvailable() {
-        return GitSshSessionFactoryTest.this.connectorAvailable;
-      }
-    };
+    givenLogger();
+    givenNoUsernameIsPresent();
+    givenNoKnownHostsFile();
+    givenKnownHostsFile(FILE_BASE_PATH_SSH + "known_hosts");
+    givenNoSSHConfigFile();
+    givenWorkingDir("target/repo_workingdir");
   }
 
   @Test
-  public void testNoPassphraseOrAgent() throws Exception {
-    givenNoPassphraseIsPresent();
-    givenNoAgentConnectorIsAvailable();
-    whenCreateSshClient();
-    thenIdentityRepositoryIsLocal();
-    thenPreferredAuthenticationIsNotPublicKey();
+  public void testSSHConnectionToTestRepoWithPEMKeyFile() throws Exception {
+    givenAPassphraseIsPresent(privateTestRepoPassphrase);
+    // givenAPrivateKeyIsPresent(privateTestRepoPEMKey);
+    givenAPrivateKeyIsPresent(FILE_BASE_URL + "git_ssh_test_repo_ecdsa521_pem.key");
+    whenCreateScmProviderGit();
+    thenTestConnectionWorks("github.com");
   }
 
   @Test
-  public void testUsePassphraseNoPrivateKey() throws Exception {
-    givenAPassphraseIsPresent();
+  public void testSSHConnectionToTestRepoWithOpenSSHKeyFile() throws Exception {
+    givenAPassphraseIsPresent(privateTestRepoPassphrase);
+    givenAPrivateKeyIsPresent(FILE_BASE_URL + "git_ssh_test_repo_ecdsa521_openssh.key");
+    whenCreateScmProviderGit();
+    thenTestConnectionWorks("github.com");
+  }
+
+  @Test
+  public void testSSHConnectionToTestRepoWithPEMKeyRaw() throws Exception {
+    givenAPassphraseIsPresent(privateTestRepoPassphrase);
+    givenAPrivateKeyIsPresent(privateTestRepoPEMKey);
+    whenCreateScmProviderGit();
+    thenTestConnectionWorks("github.com");
+  }
+
+  @Test
+  public void testSSHConnectionToTestRepoWithOpenSSHKeyRaw() throws Exception {
+    givenAPassphraseIsPresent(privateTestRepoPassphrase);
+    givenAPrivateKeyIsPresent(privateTestRepoOpenSSHKey);
+    whenCreateScmProviderGit();
+    thenTestConnectionWorks("github.com");
+  }
+
+  @Test
+  public void testSSHConnectionToTestRepoNoKeyConfigured() throws Exception {
+    givenAPassphraseIsPresent(privateTestRepoPassphrase);
     givenNoPrivateKeyIsPresent();
-    // Agent connector does not matter for this test case
-    // givenAgentConnectorAvailable();
-    whenCreateSshClient();
-    thenIdentityRepositoryIsLocal();
+    givenKnownHostsFile(FILE_BASE_PATH_SSH + "known_hosts");
+    givenSSHConfigFile(FILE_BASE_PATH_SSH + "config");
+    whenCreateScmProviderGit();
+    thenKnownHostsFileExists();
+    thenSSHConfigFileExists();
+    thenTestConnectionWorks("github.com-mavenplugins-git_ssh_test_repo");
   }
 
-  @Test
-  public void testUsePassphraseWithPrivatePEMKey() throws Exception {
-    givenAPassphraseIsPresent();
-    givenAPrivateKeyIsPresent(privateRSAPEMKey);
-    // Agent connector does not matter for this test case
-    // givenAgentConnectorAvailable();
-    whenCreateSshClient();
-    thenIdentityRepositoryIsLocal();
+  private void givenNoKnownHostsFile() {
+    givenKnownHostsFile(null);
   }
 
-  // TODO enable test after upgrade to more recent JGit SSH implementation
-  // @Test
-  public void testUsePassphraseWithPrivateOpenSSHKey() throws Exception {
-    givenAPassphraseIsPresent();
-    givenAPrivateKeyIsPresent(privateRSAOpenSSHKey);
-    // Agent connector does not matter for this test case
-    // givenAgentConnectorAvailable();
-    whenCreateSshClient();
-    thenIdentityRepositoryIsLocal();
-  }
-
-  @Test
-  public void testUseSshAgent() throws Exception {
-    if (GitScmTestUtil.isGithubAction()) {
-      // TODO this test is not yet working on GHA context
-      return;
+  private void givenKnownHostsFile(String filePath) {
+    final String propName = ScmProviderAwareSshdSessionFactory.SCM_GIT_SSH_KNOWN_HOSTS_FILE_PROP;
+    if (filePath != null) {
+      System.setProperty(propName, filePath);
+    } else {
+      System.clearProperty(propName);
     }
-    givenNoPassphraseIsPresent();
-    givenAgentConnectorAvailable();
-    whenCreateSshClient();
-    thenPreferredAuthenticationIsPublicKey();
-    thenIdentityRepositoryIsRemote();
   }
 
-  private void givenAgentConnectorAvailable() {
-    this.connectorAvailable = true;
+  private void givenNoSSHConfigFile() {
+    givenSSHConfigFile(null);
   }
 
+  private void givenSSHConfigFile(String filePath) {
+    final String propName = ScmProviderAwareSshdSessionFactory.SCM_GIT_SSH_CONFIG_FILE_PROP;
+    if (filePath != null) {
+      System.setProperty(propName, filePath);
+    } else {
+      System.clearProperty(propName);
+    }
+  }
+
+  // private void givenAgentConnectorAvailable() {
+  // this.connectorAvailable = true;
+  // }
+
+  @SuppressWarnings("unused")
   private void givenAPassphraseIsPresent() {
-    Mockito.when(this.mockInitialization.getSshPrivateKeyPassphrase()).thenReturn(Optional.of("passphrase"));
+    givenAPassphraseIsPresent("passphrase");
   }
 
-  private void givenNoAgentConnectorIsAvailable() {
-    this.connectorAvailable = false;
+  private void givenAPassphraseIsPresent(String passphrase) {
+    Mockito.when(this.mockInitialization.getSshPrivateKeyPassphrase()).thenReturn(Optional.of(passphrase));
   }
 
+  // private void givenNoAgentConnectorIsAvailable() {
+  // this.connectorAvailable = false;
+  // }
+
+  @SuppressWarnings("unused")
   private void givenNoPassphraseIsPresent() {
     Mockito.when(this.mockInitialization.getSshPrivateKeyPassphrase()).thenReturn(Optional.<String> absent());
   }
@@ -130,27 +170,37 @@ public class GitSshSessionFactoryTest {
     Mockito.when(this.mockInitialization.getSshPrivateKey()).thenReturn(Optional.of(privateKey));
   }
 
-  private void thenIdentityRepositoryIsLocal() {
-    Assert.assertFalse(this.sshClient.getIdentityRepository() instanceof RemoteIdentityRepository);
+  private void givenNoUsernameIsPresent() {
+    Mockito.when(this.mockInitialization.getUsername()).thenReturn(Optional.<String> absent());
   }
 
-  private void thenIdentityRepositoryIsRemote() {
-    Assert.assertTrue(this.sshClient.getIdentityRepository() instanceof RemoteIdentityRepository);
+  private void givenLogger() {
+    // Mockito.when(this.mockInitialization.getLogger()).thenReturn(Optional.of(this.mockLogger));
+    Mockito.when(this.mockInitialization.getLogger()).thenReturn(Optional.absent());
   }
 
-  private void thenPreferredAuthenticationIsNotPublicKey() {
-    // if this isn't explicitly set to 'publickey', no passphrase or agent were found
-    Assert.assertNotEquals(GitSshSessionFactory.PUBLIC_KEY,
-        JSch.getConfig(GitSshSessionFactory.PREFERRED_AUTHENTICATIONS));
+  private void givenWorkingDir(final String workingDir) {
+    Mockito.when(this.mockInitialization.getWorkingDirectory()).thenReturn(new File(workingDir));
   }
 
-  private void thenPreferredAuthenticationIsPublicKey() {
-    Assert.assertEquals(GitSshSessionFactory.PUBLIC_KEY,
-        JSch.getConfig(GitSshSessionFactory.PREFERRED_AUTHENTICATIONS));
+  private void whenCreateScmProviderGit() {
+    this.scmProviderGit = new ScmProviderGit();
+    this.scmProviderGit.initialize(this.mockInitialization);
   }
 
-  private void whenCreateSshClient() throws Exception {
-    Mockito.when(this.mockFS.userHome()).thenReturn(null);
-    this.sshClient = this.sessionFactory.createDefaultJSch(this.mockFS);
+  private void thenSSHConfigFileExists() {
+    assertTrue(new File(System.getProperty(ScmProviderAwareSshdSessionFactory.SCM_GIT_SSH_CONFIG_FILE_PROP)).exists());
+  }
+
+  private void thenKnownHostsFileExists() {
+    assertTrue(
+        new File(System.getProperty(ScmProviderAwareSshdSessionFactory.SCM_GIT_SSH_KNOWN_HOSTS_FILE_PROP)).exists());
+  }
+
+  private void thenTestConnectionWorks(String hostName) {
+    final String repoURL = "ssh://git@" + hostName + "/mavenplugins/git_ssh_test_repo.git";
+    final Collection<Ref> result = this.scmProviderGit.testConnection(repoURL);
+    assertEquals(1, result.size());
+    LOGGER.info(repoURL + " - ref: " + result.stream().findFirst().get().getName());
   }
 }
