@@ -1,11 +1,13 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?><project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
     <groupId>io.github.mavenplugins</groupId>
     <artifactId>org-parent</artifactId>
     <version>8</version>
-    <relativePath/>
+    <relativePath />
   </parent>
 
   <artifactId>unleash-scm-provider-git</artifactId>
@@ -18,19 +20,19 @@
 
   <developers>
     <developer>
-      <id>shillner</id>
-      <name>Stanley Hillner</name>
-      <organization>itemis AG</organization>
-      <organizationUrl>https://itemis.com/</organizationUrl>
-      <timezone>1</timezone>
-    </developer>
-    <developer>
       <id>mavenplugins</id>
       <!-- Let Maven Central Search show 'Public Project' as known contributors tag -->
       <name>Public Project</name>
       <url>https://github.com/mavenplugins/unleash-scm-provider-git/graphs/contributors</url>
       <organization>mavenplugins</organization>
       <organizationUrl>https://github.com/mavenplugins/</organizationUrl>
+      <timezone>1</timezone>
+    </developer>
+    <developer>
+      <id>shillner</id>
+      <name>Stanley Hillner</name>
+      <organization>itemis AG</organization>
+      <organizationUrl>https://itemis.com/</organizationUrl>
       <timezone>1</timezone>
     </developer>
   </developers>
@@ -55,14 +57,17 @@
     <version.unleash-maven-plugin.perform>3.2.0</version.unleash-maven-plugin.perform>
     <unleash.goal>perform</unleash.goal>
     <!-- This is considered by the reusable GH unleash action: -->
-    <unleash.cmdline.goal>${groupId.unleash-maven-plugin}:${artifactId.unleash-maven-plugin}:${version.unleash-maven-plugin.perform}:${unleash.goal}</unleash.cmdline.goal>
+    <unleash.cmdline.goal>
+      ${groupId.unleash-maven-plugin}:${artifactId.unleash-maven-plugin}:${version.unleash-maven-plugin.perform}:${unleash.goal}</unleash.cmdline.goal>
     <!-- 3rd PARTY -->
-    <version.jgit>5.0.2.201807311906-r</version.jgit>
-    <version.jsch-agentproxy>0.0.9</version.jsch-agentproxy>
-    <version.slf4j>1.7.2</version.slf4j>
+    <!-- version 6+ requires Java 11 -->
+    <version.jgit>5.13.3.202401111512-r</version.jgit>
+    <version.apache-sshd>2.14.0</version.apache-sshd>
+    <version.slf4j>1.7.36</version.slf4j>
     <!-- TEST -->
-    <version.junit>4.13.1</version.junit>
+    <version.junit>4.13.2</version.junit>
     <version.mockito-all>1.10.19</version.mockito-all>
+    <version.log4j2>2.24.2</version.log4j2>
   </properties>
 
   <dependencies>
@@ -73,36 +78,16 @@
       <version>${version.unleash-maven-plugin}</version>
       <!-- provided by the unleash-maven-plugin -->
       <scope>provided</scope>
-    </dependency>
-
-    <!-- 3rd PARTY DEPENDENCIES -->
-    <dependency>
-      <groupId>com.jcraft</groupId>
-      <artifactId>jsch.agentproxy.jsch</artifactId>
-      <version>${version.jsch-agentproxy}</version>
       <exclusions>
-        <!-- Exclude com.jcraft:jsch since it is overlapping with dependency of org.eclipse.jgit:org.eclipse.jgit -->
         <exclusion>
-          <groupId>com.jcraft</groupId>
-          <artifactId>jsch</artifactId>
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-simple</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
-    <dependency>
-      <groupId>com.jcraft</groupId>
-      <artifactId>jsch.agentproxy.pageant</artifactId>
-      <version>${version.jsch-agentproxy}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.jcraft</groupId>
-      <artifactId>jsch.agentproxy.sshagent</artifactId>
-      <version>${version.jsch-agentproxy}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.jcraft</groupId>
-      <artifactId>jsch.agentproxy.usocket-jna</artifactId>
-      <version>${version.jsch-agentproxy}</version>
-    </dependency>
+
+    <!-- 3rd PARTY DEPENDENCIES -->
+    <!-- Eclipse JGit -->
     <dependency>
       <groupId>org.eclipse.jgit</groupId>
       <artifactId>org.eclipse.jgit</artifactId>
@@ -112,6 +97,27 @@
       <groupId>org.eclipse.jgit</groupId>
       <artifactId>org.eclipse.jgit.lfs</artifactId>
       <version>${version.jgit}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jgit</groupId>
+      <artifactId>org.eclipse.jgit.ssh.apache</artifactId>
+      <version>${version.jgit}</version>
+    </dependency>
+    <!-- Apache SSHD -->
+    <dependency>
+      <groupId>org.apache.sshd</groupId>
+      <artifactId>sshd-osgi</artifactId>
+      <version>${version.apache-sshd}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.sshd</groupId>
+      <artifactId>sshd-sftp</artifactId>
+      <version>${version.apache-sshd}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>${version.slf4j}</version>
     </dependency>
 
     <!-- TEST DEPENDENCIES -->
@@ -128,11 +134,20 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-simple</artifactId>
-      <version>${version.slf4j}</version>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-slf4j-impl</artifactId>
+      <version>${version.log4j2}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
+
+  <build>
+    <testResources>
+      <testResource>
+        <directory>src/test/resources</directory>
+        <filtering>true</filtering>
+      </testResource>
+    </testResources>
+  </build>
 
 </project>
