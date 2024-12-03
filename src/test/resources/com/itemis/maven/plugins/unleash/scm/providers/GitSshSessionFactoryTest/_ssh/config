@@ -1,0 +1,5 @@
+Host github.com-mavenplugins-git_ssh_test_repo
+    User git
+    Hostname github.com
+    PreferredAuthentications publickey
+    IdentityFile=${project.build.directory}/test-classes/com/itemis/maven/plugins/unleash/scm/providers/GitSshSessionFactoryTest/git_ssh_test_repo_ecdsa521_openssh.key
