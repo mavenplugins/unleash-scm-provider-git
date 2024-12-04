@@ -91,7 +91,7 @@ import jakarta.inject.Inject;
 
 @ScmProviderType("git")
 public class ScmProviderGit implements ScmProvider {
-  private static final String LOG_PREFIX = "Git - ";
+  private static final String LOG_PREFIX = GitUtil.LOG_PREFIX;
 
   private Logger log;
   private Git git;

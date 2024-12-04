@@ -46,6 +46,7 @@ import org.eclipse.jgit.transport.sshd.JGitKeyCache;
 import org.eclipse.jgit.transport.sshd.KeyPasswordProvider;
 import org.eclipse.jgit.transport.sshd.ServerKeyDatabase;
 import org.eclipse.jgit.transport.sshd.SshdSessionFactory;
+import org.eclipse.jgit.util.SystemReader;
 
 import com.google.common.base.Optional;
 import com.itemis.maven.plugins.unleash.scm.ScmProviderInitialization;
@@ -59,6 +60,7 @@ import com.itemis.maven.plugins.unleash.scm.providers.util.GitUtil;
  */
 public class ScmProviderAwareSshdSessionFactory extends SshdSessionFactory {
 
+  private static final String LOG_PREFIX = GitUtil.LOG_PREFIX;
   public static final String SCM_GIT_SSH_CONFIG_FILE_PROP = "SCM_GIT_SSH_CONFIG_FILE";
   public static final String SCM_GIT_SSH_KNOWN_HOSTS_FILE_PROP = "SCM_GIT_SSH_KNOWN_HOSTS_FILE";
 
@@ -72,7 +74,7 @@ public class ScmProviderAwareSshdSessionFactory extends SshdSessionFactory {
     this.sshPrivateKey = getEffectiveSshPrivateKey(initialization.getSshPrivateKey());
     this.sshPrivateKeyPassphrase = initialization.getSshPrivateKeyPassphrase().or(StringUtils.EMPTY);
     if (StringUtils.isNotBlank(this.sshPrivateKeyPassphrase)) {
-      this.logger.info("SSH passphrase is configured");
+      this.logger.info(LOG_PREFIX + "SSH passphrase is configured");
     }
   }
 
@@ -82,7 +84,7 @@ public class ScmProviderAwareSshdSessionFactory extends SshdSessionFactory {
     if (StringUtils.isNotBlank(configFileName)) {
       configFile = new File(configFileName);
     }
-    this.logger.info("Using SSH config file: " + configFile);
+    this.logger.info(LOG_PREFIX + "Using SSH config file: " + configFile);
     return super.createSshConfigStore(homeDir, configFile, localUserName);
   }
 
@@ -91,7 +93,7 @@ public class ScmProviderAwareSshdSessionFactory extends SshdSessionFactory {
     final String knownHostsFile = System.getProperty(SCM_GIT_SSH_KNOWN_HOSTS_FILE_PROP);
     if (StringUtils.isNotBlank(knownHostsFile)) {
       final Path knwonHostsFilePath = Paths.get(knownHostsFile);
-      this.logger.info("Using known hosts file: " + knwonHostsFilePath.toAbsolutePath());
+      this.logger.info(LOG_PREFIX + "Using known hosts file: " + knwonHostsFilePath.toAbsolutePath());
       return Arrays.asList(knwonHostsFilePath);
     }
     return super.getDefaultKnownHostsFiles(sshDir);
@@ -106,7 +108,7 @@ public class ScmProviderAwareSshdSessionFactory extends SshdSessionFactory {
       public boolean accept(@NonNull String connectAddress, @NonNull InetSocketAddress remoteAddress,
           @NonNull PublicKey serverKey, @NonNull Configuration config, CredentialsProvider provider) {
         ScmProviderAwareSshdSessionFactory.this.logger
-            .fine("Fingerprint of " + connectAddress + ": " + KeyUtils.getFingerPrint(serverKey));
+            .fine(LOG_PREFIX + "Fingerprint of " + connectAddress + ": " + KeyUtils.getFingerPrint(serverKey));
         return super.accept(connectAddress, remoteAddress, serverKey, config, provider);
       }
 
@@ -115,6 +117,10 @@ public class ScmProviderAwareSshdSessionFactory extends SshdSessionFactory {
 
   @Override
   protected Iterable<KeyPair> getDefaultKeys(@NonNull File sshDir) {
+    if (SystemReader.getInstance().getenv("GIT_SSH") != null) {
+      this.logger.warning(LOG_PREFIX + "GIT_SSH env variable is set as " + SystemReader.getInstance().getenv("GIT_SSH")
+          + "\n  >>>>> NOTE: This may lead to unexpected timeout failures. It is recommended to unset GIT_SSH for this SCM provider!");
+    }
     if (StringUtils.isNotBlank(this.sshPrivateKey)) {
       return new StringKeyPairProvider(this.sshPrivateKey, this.sshPrivateKeyPassphrase).loadKeys(null);
     }
@@ -129,7 +135,7 @@ public class ScmProviderAwareSshdSessionFactory extends SshdSessionFactory {
         if (attempt > 0) {
           throw new IOException("SSH passphrase was not correct in first attempt - aborting further attempts!");
         }
-        ScmProviderAwareSshdSessionFactory.this.logger.fine("Using passphrase configured");
+        ScmProviderAwareSshdSessionFactory.this.logger.fine(LOG_PREFIX + "Using passphrase configured");
         return ScmProviderAwareSshdSessionFactory.this.sshPrivateKeyPassphrase.toCharArray();
       }
     };
@@ -154,11 +160,11 @@ public class ScmProviderAwareSshdSessionFactory extends SshdSessionFactory {
     try {
       // Try if it is a file URL
       final URL url = new URL(sshPrivateKey);
-      this.logger.info("SSH private key configured as URL: " + url);
+      this.logger.info(LOG_PREFIX + "SSH private key configured as URL: " + url);
       if ("file".equalsIgnoreCase(url.getProtocol())) {
         try {
           final Path filePath = Paths.get(url.getPath());
-          this.logger.info("Reading SSH key from file " + filePath);
+          this.logger.info(LOG_PREFIX + "Reading SSH key from file " + filePath);
           return new String(Files.readAllBytes(filePath), StandardCharsets.UTF_8);
         } catch (IOException e) {
           throw new RuntimeException("Failed to read SSH key from file: " + url.getFile(), e);
@@ -168,7 +174,7 @@ public class ScmProviderAwareSshdSessionFactory extends SshdSessionFactory {
       }
     } catch (MalformedURLException e) {
       // nothing to do
-      this.logger.info("SSH private key configured as String");
+      this.logger.info(LOG_PREFIX + "SSH private key configured as String");
     }
     return sshPrivateKey;
   }

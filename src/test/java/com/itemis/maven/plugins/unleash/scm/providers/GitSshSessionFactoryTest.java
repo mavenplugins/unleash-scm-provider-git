@@ -10,6 +10,7 @@ import java.util.Collection;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.util.FS;
+import org.eclipse.jgit.util.SystemReader;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -36,7 +37,7 @@ public class GitSshSessionFactoryTest {
   private static String privateTestRepoOpenSSHKey;
   private static String privateTestRepoPEMKey;
   private static String privateTestRepoPassphrase = StringUtils
-      .defaultIfBlank(System.getenv("TEST_REPO_KEY_PASSPHRASE"), StringUtils.EMPTY);
+      .defaultIfBlank(SystemReader.getInstance().getenv("TEST_REPO_KEY_PASSPHRASE"), StringUtils.EMPTY);
 
   private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(GitSshSessionFactoryTest.class);
 
