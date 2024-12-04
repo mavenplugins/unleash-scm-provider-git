@@ -6,6 +6,8 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
 
+import org.eclipse.jgit.util.SystemReader;
+
 public class GitScmTestUtil {
 
   private GitScmTestUtil() {
@@ -24,7 +26,7 @@ public class GitScmTestUtil {
   }
 
   public static boolean isGithubAction() {
-    return "true".equalsIgnoreCase(System.getenv("GITHUB_ACTIONS"));
+    return "true".equalsIgnoreCase(SystemReader.getInstance().getenv("GITHUB_ACTIONS"));
   }
 
 }

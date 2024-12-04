@@ -27,6 +27,7 @@ import com.itemis.maven.plugins.unleash.scm.ScmException;
 import com.itemis.maven.plugins.unleash.scm.ScmOperation;
 
 public class GitUtil {
+  public static final String LOG_PREFIX = "Git - ";
   public static final String SYSPROP_ENABLE_JGIT_BUILTIN_LFS = "scmGit.enableJGitBuiltinLFS";
   public static final String TAG_NAME_PREFIX = "refs/tags/";
   public static final String HEADS_NAME_PREFIX = "refs/heads/";
