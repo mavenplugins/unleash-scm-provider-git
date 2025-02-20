@@ -6,7 +6,7 @@
   <parent>
     <groupId>io.github.mavenplugins</groupId>
     <artifactId>org-parent</artifactId>
-    <version>8</version>
+    <version>10</version>
     <relativePath />
   </parent>
 
@@ -62,6 +62,9 @@
     <!-- 3rd PARTY -->
     <!-- version 6+ requires Java 11 -->
     <version.jgit>5.13.3.202401111512-r</version.jgit>
+    <!-- !!! version.gson must be COMPLIANT with version.jgit !!! -->
+    <version.gson>2.8.9</version.gson>
+    <!-- !!! version.apache-sshd version must be COMPLIANT with version.jgit !!! -->
     <version.apache-sshd>2.14.0</version.apache-sshd>
     <version.slf4j>1.7.36</version.slf4j>
     <!-- TEST -->
@@ -99,9 +102,20 @@
       <version>${version.jgit}</version>
     </dependency>
     <dependency>
+      <groupId>com.google.code.gson</groupId>
+      <artifactId>gson</artifactId>
+      <version>${version.gson}</version>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jgit</groupId>
       <artifactId>org.eclipse.jgit.ssh.apache</artifactId>
       <version>${version.jgit}</version>
+<!--      <exclusions>-->
+<!--        <exclusion>-->
+<!--          <groupId>org.apache.sshd</groupId>-->
+<!--          <artifactId>*</artifactId>-->
+<!--        </exclusion>-->
+<!--      </exclusions>-->
     </dependency>
     <!-- Apache SSHD -->
     <dependency>

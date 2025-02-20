@@ -88,10 +88,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Summary
 - Enable JGit BuiltinLFS by option `-DscmGit.enableJGitBuiltinLFS`<br>
   or if git config `filter.lfs.useJGitBuiltin` is set `true` - #7<br>
+- The SSH private key can be provided as file also
 
 ### 🚀 New Features
 - Enable JGit BuiltinLFS by option `-DscmGit.enableJGitBuiltinLFS`<br>
   or if git config `filter.lfs.useJGitBuiltin` is set `true` - #7<br>
+- If the private key string is of file URL protocol format `file:<filename>`, then the private key is read from that file.
 
 ### 📦 Updates
 - pom.xml:
