@@ -81,6 +81,51 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - TBD
 
 
+## [3.3.0]
+<!-- !!! Align version in badge URLs as well !!! -->
+[![3.3.0 Badge](https://img.shields.io/nexus/r/io.github.mavenplugins/unleash-scm-provider-git?server=https://s01.oss.sonatype.org&label=Maven%20Central&queryOpt=:v=3.3.0)](https://central.sonatype.com/artifact/io.github.mavenplugins/unleash-scm-provider-git/3.3.0)
+
+### Summary
+- Enable JGit BuiltinLFS by option `-DscmGit.enableJGitBuiltinLFS`<br>
+  or if git config `filter.lfs.useJGitBuiltin` is set `true` - #7<br>
+- The SSH private key can be provided as file also
+- 🚀 Make SSH connections work with recent key encodings
+
+### 🚀 New Features
+- Enable JGit BuiltinLFS by option `-DscmGit.enableJGitBuiltinLFS`<br>
+  or if git config `filter.lfs.useJGitBuiltin` is set `true` - #7<br>
+- If the private key string is of file URL protocol format `file:<filename>`, then the private key is read from that file.
+- Fix vulnerability warning on `jgit` dependency
+
+### 🔒 Security
+- fix vulnerability warning for `jgit` dependency
+
+### 📦 Updates
+- pom.xml:
+  - bump `jgit` version to `5.13.3.202401111512-r`
+  - add dependency to `org.eclipse.jgit:org.eclipse.jgit.lfs`
+  - replace `jsch` dependency by `org.apache.sshd 2.14.0` dependencies
+  - bump `slf4j` version to `1.7.36`
+  - bump `junit` version to `4.13.2`
+  - add explicit `gson` dependency version `2.8.9` to resolve vulnerability warning
+
+### 🔧 Internal Changes
+- ScmProviderGit.java:
+  - restructure code to allow specific JUnit testing without a repo being checked out
+  - add log for JGit built in enabled status
+- GitUtil.java:
+  - add method enableJGitBuiltinLFSIfDefined(final Repository repository)
+  - call this method from cTor
+  - enhance cTor by logger parameter
+
+### 🚦 Tests
+- GitSshSessionFactoryTest.java:
+  - Revive commented tests
+  - add test resources required
+- GitScmTestUtil.java:
+  - add as helper util for tests
+
+
 ## [3.2.0]
 <!-- !!! Align version in badge URLs as well !!! -->
 [![3.2.0 Badge](https://img.shields.io/nexus/r/io.github.mavenplugins/unleash-scm-provider-git?server=https://s01.oss.sonatype.org&label=Maven%20Central&queryOpt=:v=3.2.0)](https://central.sonatype.com/artifact/io.github.mavenplugins/unleash-scm-provider-git/3.2.0)
@@ -239,7 +284,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - This is just a dummy placeholder to make the parser of GHCICD/release-notes-from-changelog@v1 happy!
 -->
 
-[Unreleased]: https://github.com/mavenplugins/unleash-scm-provider-git/compare/v3.2.0..HEAD
+[Unreleased]: https://github.com/mavenplugins/unleash-scm-provider-git/compare/v3.3.0..HEAD
+[3.3.0]: https://github.com/mavenplugins/unleash-scm-provider-git/compare/v3.2.0..v3.3.0
 [3.2.0]: https://github.com/mavenplugins/unleash-scm-provider-git/compare/v3.1.0..v3.2.0
 [3.1.0]: https://github.com/mavenplugins/unleash-scm-provider-git/compare/v3.0.1..v3.1.0
 [3.0.1]: https://github.com/mavenplugins/unleash-scm-provider-git/compare/v3.0.0..v3.0.1
