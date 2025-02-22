@@ -41,7 +41,6 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.merge.MergeStrategy;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
-import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.PushResult;
 import org.eclipse.jgit.transport.RemoteRefUpdate;
 import org.eclipse.jgit.transport.RemoteRefUpdate.Status;
@@ -49,6 +48,7 @@ import org.eclipse.jgit.transport.SshSessionFactory;
 import org.eclipse.jgit.transport.SshTransport;
 import org.eclipse.jgit.transport.TagOpt;
 import org.eclipse.jgit.transport.Transport;
+import org.eclipse.jgit.transport.TransportHttp;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.eclipse.jgit.util.LfsFactory;
 
@@ -96,7 +96,7 @@ public class ScmProviderGit implements ScmProvider {
   private Logger log;
   private Git git;
   private PersonIdent personIdent;
-  private CredentialsProvider credentialsProvider;
+  private ScmUsernamePasswordCredentialsProvider credentialsProvider;
   private SshSessionFactory sshSessionFactory;
   private File workingDir;
   private String workingDirParentToGitWorkTree;
@@ -125,7 +125,7 @@ public class ScmProviderGit implements ScmProvider {
     }
 
     if (initialization.getUsername().isPresent()) {
-      this.credentialsProvider = new UsernamePasswordCredentialsProvider(initialization.getUsername().get(),
+      this.credentialsProvider = new ScmUsernamePasswordCredentialsProvider(initialization.getUsername().get(),
           initialization.getPassword().or(""));
     }
     this.sshSessionFactory = new ScmProviderAwareSshdSessionFactory(initialization);
@@ -1270,21 +1270,64 @@ public class ScmProviderGit implements ScmProvider {
     return resultBuilder.build();
   }
 
+  /**
+   * NOTE: Since JGit 5.10+ the HTTP authentication behavior did change:
+   * JGit 5.10+ is reading git config 'http.extraheader' from the local repo checked out.<br>
+   * For GitHub Action contexts this means that JGit is authenticating effectively with the GitHub token
+   * used by the Checkout Action, since the Checkout Action is adding http.extraheader AUTHORIZATION: basic
+   * ${{github.token}} to the local repos .git/config file.
+   *
+   * This behavior can be overruled by implementing a {@link TransportConfigCallback} for
+   * {@link TransportHttp} making use of {@link TransportHttp#setPreemptiveBasicAuthentication(String, String)} to
+   * enforce authentication with the credentials provided by the command line parameters of the Unleash command.
+   *
+   * {@link TransportHttp#setPreemptiveBasicAuthentication(String, String)} was introduced by JGit 5.11+.
+   */
   private void setAuthenticationDetails(TransportCommand<?, ?> command) {
     command.setCredentialsProvider(this.credentialsProvider);
     command.setTransportConfigCallback(new TransportConfigCallback() {
       @Override
       public void configure(Transport transport) {
-        if (isSshTransport(transport)) {
-          SshTransport sshTransport = (SshTransport) transport;
+        if (transport instanceof TransportHttp) {
+          if (ScmProviderGit.this.credentialsProvider != null) {
+            final TransportHttp httpTransport = (TransportHttp) transport;
+            // See https://wiki.eclipse.org/JGit/New_and_Noteworthy/5.11
+            httpTransport.setPreemptiveBasicAuthentication(ScmProviderGit.this.credentialsProvider.getUsername(),
+                ScmProviderGit.this.credentialsProvider.getPassword());
+          }
+        } else if (transport instanceof SshTransport) {
+          final SshTransport sshTransport = (SshTransport) transport;
           sshTransport.setSshSessionFactory(ScmProviderGit.this.sshSessionFactory);
         }
       }
-
-      private boolean isSshTransport(Transport transport) {
-        return transport instanceof SshTransport;
-      }
     });
+  }
+
+  /**
+   *
+   * @author mhoffrog
+   *
+   */
+  private static class ScmUsernamePasswordCredentialsProvider extends UsernamePasswordCredentialsProvider {
+
+    private String username;
+
+    private String password;
+
+    public ScmUsernamePasswordCredentialsProvider(String username, String password) {
+      super(username, password);
+      this.username = username;
+      this.password = password;
+    }
+
+    public String getUsername() {
+      return this.username;
+    }
+
+    public String getPassword() {
+      return this.password;
+    }
+
   }
 
 }
