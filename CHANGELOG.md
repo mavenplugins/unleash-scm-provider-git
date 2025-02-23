@@ -90,6 +90,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   or if git config `filter.lfs.useJGitBuiltin` is set `true` - #7<br>
 - The SSH private key can be provided as file also
 - 🚀 Make SSH connections work with recent key encodings
+- Fix vulnerability warnings - see **📦 Updates** for details
 
 ### 🚀 New Features
 - Enable JGit BuiltinLFS by option `-DscmGit.enableJGitBuiltinLFS`<br>
@@ -98,16 +99,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Fix vulnerability warning on `jgit` dependency
 
 ### 🔒 Security
-- fix vulnerability warning for `jgit` dependency
+- Fix vulnerability warning for `jgit` dependency
 
 ### 📦 Updates
 - pom.xml:
-  - bump `jgit` version to `5.13.3.202401111512-r`
-  - add dependency to `org.eclipse.jgit:org.eclipse.jgit.lfs`
-  - replace `jsch` dependency by `org.apache.sshd 2.14.0` dependencies
-  - bump `slf4j` version to `1.7.36`
-  - bump `junit` version to `4.13.2`
-  - add explicit `gson` dependency version `2.8.9` to resolve vulnerability warning
+  - Update `jgit` to version `5.13.3.202401111512-r`
+  - Add dependency to `org.eclipse.jgit:org.eclipse.jgit.lfs`
+  - Replace `jsch` dependency by `org.apache.sshd 2.14.0` dependencies
+  - Update `slf4j` to version `1.7.36`
+  - Update `unleash-maven-plugin` to version `3.2.1`
+  - Update `junit` to version `4.13.2`
+  - Add explicit `gson` dependency version `2.8.9` to resolve vulnerability warning
 
 ### 🔧 Internal Changes
 - ScmProviderGit.java:
