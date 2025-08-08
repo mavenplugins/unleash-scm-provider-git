@@ -83,7 +83,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [3.3.0]
 <!-- !!! Align version in badge URLs as well !!! -->
-[![3.3.0 Badge](https://img.shields.io/nexus/r/io.github.mavenplugins/unleash-scm-provider-git?server=https://s01.oss.sonatype.org&label=Maven%20Central&queryOpt=:v=3.3.0)](https://central.sonatype.com/artifact/io.github.mavenplugins/unleash-scm-provider-git/3.3.0)
+[![3.3.0 Badge](https://img.shields.io/maven-central/v/io.github.mavenplugins/unleash-scm-provider-git?label=Maven%20Central&filter=3.3.0)](https://central.sonatype.com/artifact/io.github.mavenplugins/unleash-scm-provider-git/3.3.0)
 
 ### Summary
 - Enable JGit BuiltinLFS by option `-DscmGit.enableJGitBuiltinLFS`<br>
@@ -130,7 +130,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [3.2.0]
 <!-- !!! Align version in badge URLs as well !!! -->
-[![3.2.0 Badge](https://img.shields.io/nexus/r/io.github.mavenplugins/unleash-scm-provider-git?server=https://s01.oss.sonatype.org&label=Maven%20Central&queryOpt=:v=3.2.0)](https://central.sonatype.com/artifact/io.github.mavenplugins/unleash-scm-provider-git/3.2.0)
+[![3.2.0 Badge](https://img.shields.io/maven-central/v/io.github.mavenplugins/unleash-scm-provider-git?label=Maven%20Central&filter=3.2.0)](https://central.sonatype.com/artifact/io.github.mavenplugins/unleash-scm-provider-git/3.2.0)
 
 ### Summary
 - Enable JGit BuiltinLFS by option `-DscmGit.enableJGitBuiltinLFS`<br>
@@ -164,7 +164,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [3.1.0]
 <!-- !!! Align version in badge URLs as well !!! -->
-[![3.1.0 Badge](https://img.shields.io/nexus/r/io.github.mavenplugins/unleash-scm-provider-git?server=https://s01.oss.sonatype.org&label=Maven%20Central&queryOpt=:v=3.1.0)](https://central.sonatype.com/artifact/io.github.mavenplugins/unleash-scm-provider-git/3.1.0)
+[![3.1.0 Badge](https://img.shields.io/maven-central/v/io.github.mavenplugins/unleash-scm-provider-git?label=Maven%20Central&filter=3.1.0)](https://central.sonatype.com/artifact/io.github.mavenplugins/unleash-scm-provider-git/3.1.0)
 
 ### Summary
 - Fix issue raised by workflow step `SetNextDevVersion` for Git SCM projects. - #6<br>
@@ -186,7 +186,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [3.0.1]
 <!-- !!! Align version in badge URLs as well !!! -->
-[![3.0.1 Badge](https://img.shields.io/nexus/r/io.github.mavenplugins/unleash-scm-provider-git?server=https://s01.oss.sonatype.org&label=Maven%20Central&queryOpt=:v=3.0.1)](https://central.sonatype.com/artifact/io.github.mavenplugins/unleash-scm-provider-git/3.0.1)
+[![3.0.1 Badge](https://img.shields.io/maven-central/v/io.github.mavenplugins/unleash-scm-provider-git?label=Maven%20Central&filter=3.0.1)](https://central.sonatype.com/artifact/io.github.mavenplugins/unleash-scm-provider-git/3.0.1)
 
 ### Summary
 - Update dependency `unleash-scm-provider-api` to scope `provided`
@@ -199,7 +199,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [3.0.0]
 <!-- !!! Align version in badge URLs as well !!! -->
-[![3.0.0 Badge](https://img.shields.io/nexus/r/io.github.mavenplugins/unleash-scm-provider-git?server=https://s01.oss.sonatype.org&label=Maven%20Central&queryOpt=:v=3.0.0)](https://central.sonatype.com/artifact/io.github.mavenplugins/unleash-scm-provider-git/3.0.0)
+[![3.0.0 Badge](https://img.shields.io/maven-central/v/io.github.mavenplugins/unleash-scm-provider-git?label=Maven%20Central&filter=3.0.0)](https://central.sonatype.com/artifact/io.github.mavenplugins/unleash-scm-provider-git/3.0.0)
 
 ### Summary
 - Update dependency to `unleash-scm-provider-api 3.0.0`
@@ -233,7 +233,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [2.4.0]
 <!-- !!! Align version in badge URLs as well !!! -->
-[![2.4.0 Badge](https://img.shields.io/nexus/r/io.github.mavenplugins/unleash-scm-provider-git?server=https://s01.oss.sonatype.org&label=Maven%20Central&queryOpt=:v=2.4.0)](https://central.sonatype.com/artifact/io.github.mavenplugins/unleash-scm-provider-git/2.4.0)
+[![2.4.0 Badge](https://img.shields.io/maven-central/v/io.github.mavenplugins/unleash-scm-provider-git?label=Maven%20Central&filter=2.4.0)](https://central.sonatype.com/artifact/io.github.mavenplugins/unleash-scm-provider-git/2.4.0)
 
 ### Summary
 - Enhance the tag comment to prepend with scmMessagePrefix if this is set - #2
@@ -253,7 +253,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [2.3.0]
 <!-- !!! Align version in badge URLs as well !!! -->
-[![2.3.0 Badge](https://img.shields.io/nexus/r/io.github.mavenplugins/unleash-scm-provider-git?server=https://s01.oss.sonatype.org&label=Maven%20Central&queryOpt=:v=2.3.0)](https://central.sonatype.com/artifact/io.github.mavenplugins/unleash-scm-provider-git/2.3.0)
+[![2.3.0 Badge](https://img.shields.io/maven-central/v/io.github.mavenplugins/unleash-scm-provider-git?label=Maven%20Central&filter=2.3.0)](https://central.sonatype.com/artifact/io.github.mavenplugins/unleash-scm-provider-git/2.3.0)
 
 ### Summary
 - Initial release of this artifact with new groupId `io.github.mavenplugins`
