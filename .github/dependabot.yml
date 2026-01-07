@@ -10,6 +10,9 @@ updates:
     # ignore any artifacts to comply with jgit version - those are managed manually!
     - dependency-name: "com.google.code.gson:*"
     - dependency-name: "org.apache.sshd:*"
+    # ignore jgit versions >= 6.*
+    - dependency-name: "org.eclipse.jgit:*"
+      versions: ["[6.0,)"]
     # ignore slf4j-api - will be managed manually
     - dependency-name: "org.slf4j:slf4j-api"
 
