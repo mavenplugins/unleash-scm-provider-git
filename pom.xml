@@ -63,7 +63,7 @@
     <!-- !!! version.gson must be COMPLIANT with version.jgit !!! -->
     <version.gson>2.8.9</version.gson>
     <!-- !!! version.apache-sshd version must be COMPLIANT with version.jgit !!! -->
-    <version.apache-sshd>2.14.0</version.apache-sshd>
+    <version.apache-sshd>2.16.0</version.apache-sshd>
     <version.slf4j>1.7.36</version.slf4j>
     <!-- TEST -->
     <version.junit>4.13.2</version.junit>
