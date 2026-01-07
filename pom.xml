@@ -4,7 +4,7 @@
   <parent>
     <groupId>io.github.mavenplugins</groupId>
     <artifactId>org-parent</artifactId>
-    <version>12</version>
+    <version>13</version>
     <relativePath/>
   </parent>
 
@@ -50,7 +50,7 @@
     <version.java>1.8</version.java>
     <javadoc.doclint>none</javadoc.doclint>
     <!-- UNLEASH -->
-    <version.unleash-maven-plugin>3.2.1</version.unleash-maven-plugin>
+    <version.unleash-maven-plugin>3.3.3</version.unleash-maven-plugin>
     <!-- Resolve chicken/egg unleash by defining specific unleash commandline goal: -->
     <version.unleash-maven-plugin.perform>3.2.1</version.unleash-maven-plugin.perform>
     <unleash.goal>perform</unleash.goal>
@@ -68,7 +68,7 @@
     <!-- TEST -->
     <version.junit>4.13.2</version.junit>
     <version.mockito-all>1.10.19</version.mockito-all>
-    <version.log4j2>2.24.2</version.log4j2>
+    <version.log4j2>2.25.3</version.log4j2>
   </properties>
 
   <dependencies>
