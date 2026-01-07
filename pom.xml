@@ -50,7 +50,7 @@
     <version.java>1.8</version.java>
     <javadoc.doclint>none</javadoc.doclint>
     <!-- UNLEASH -->
-    <version.unleash-maven-plugin>3.2.1</version.unleash-maven-plugin>
+    <version.unleash-maven-plugin>3.3.3</version.unleash-maven-plugin>
     <!-- Resolve chicken/egg unleash by defining specific unleash commandline goal: -->
     <version.unleash-maven-plugin.perform>3.2.1</version.unleash-maven-plugin.perform>
     <unleash.goal>perform</unleash.goal>
