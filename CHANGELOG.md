@@ -81,6 +81,26 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - TBD
 
 
+## [3.3.1]
+<!-- !!! Align version in badge URLs as well !!! -->
+[![3.3.1 Badge](https://img.shields.io/maven-central/v/io.github.mavenplugins/unleash-scm-provider-git?label=Maven%20Central&filter=3.3.1)](https://central.sonatype.com/artifact/io.github.mavenplugins/unleash-scm-provider-git/3.3.1)
+
+### Summary
+- Fix vulnerability warnings - see **🔒 Security** for details
+- Update `org.apache.sshd` to version `2.16.0`
+
+### 🔒 Security
+- Fix vulnerability warning on `jgit` dependency
+- Fix warnings on actions
+
+### 📦 Updates
+- pom.xml:
+  - Update `org.eclipse.jgit` dependencies to version `5.13.5.202508271544-r`
+  - Update `org.apache.sshd` dependencies to version `2.16.0`
+  - Update `unleash-maven-plugin` dependency to version `3.3.3`
+  - Update `version.unleash-maven-plugin.perform` to version `3.3.3`
+
+
 ## [3.3.0]
 <!-- !!! Align version in badge URLs as well !!! -->
 [![3.3.0 Badge](https://img.shields.io/maven-central/v/io.github.mavenplugins/unleash-scm-provider-git?label=Maven%20Central&filter=3.3.0)](https://central.sonatype.com/artifact/io.github.mavenplugins/unleash-scm-provider-git/3.3.0)
@@ -286,7 +306,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - This is just a dummy placeholder to make the parser of GHCICD/release-notes-from-changelog@v1 happy!
 -->
 
-[Unreleased]: https://github.com/mavenplugins/unleash-scm-provider-git/compare/v3.3.0..HEAD
+[Unreleased]: https://github.com/mavenplugins/unleash-scm-provider-git/compare/v3.3.1..HEAD
+[3.3.1]: https://github.com/mavenplugins/unleash-scm-provider-git/compare/v3.3.0..v3.3.1
 [3.3.0]: https://github.com/mavenplugins/unleash-scm-provider-git/compare/v3.2.0..v3.3.0
 [3.2.0]: https://github.com/mavenplugins/unleash-scm-provider-git/compare/v3.1.0..v3.2.0
 [3.1.0]: https://github.com/mavenplugins/unleash-scm-provider-git/compare/v3.0.1..v3.1.0
