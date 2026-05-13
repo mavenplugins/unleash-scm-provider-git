@@ -29,4 +29,8 @@ public class GitScmTestUtil {
     return "true".equalsIgnoreCase(SystemReader.getInstance().getenv("GITHUB_ACTIONS"));
   }
 
+  public static boolean isTriggeredByGithubPullRequest() {
+    return "pull_request".equals(SystemReader.getInstance().getenv("GITHUB_EVENT_NAME"));
+  }
+
 }
