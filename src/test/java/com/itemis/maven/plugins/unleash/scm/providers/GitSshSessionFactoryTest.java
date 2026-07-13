@@ -60,7 +60,7 @@ public class GitSshSessionFactoryTest {
   public void beforeMethod() {
     // Run this test only on GHA not triggered by a PR or if key passphrase is explicitly configured.
     Assume.assumeTrue(GitScmTestUtil.isGithubAction() && !GitScmTestUtil.isTriggeredByGithubPullRequest()
-        || StringUtils.isNotBlank(privateTestRepoPassphrase));
+        && !GitScmTestUtil.isGithubDependabotPullRequestBranch() || StringUtils.isNotBlank(privateTestRepoPassphrase));
     // Init before each test method
     MockitoAnnotations.initMocks(this);
     givenLogger();

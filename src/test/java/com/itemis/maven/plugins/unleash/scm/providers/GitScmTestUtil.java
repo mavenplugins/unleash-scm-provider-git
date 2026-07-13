@@ -6,6 +6,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
 
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jgit.util.SystemReader;
 
 public class GitScmTestUtil {
@@ -30,7 +31,11 @@ public class GitScmTestUtil {
   }
 
   public static boolean isTriggeredByGithubPullRequest() {
-    return "pull_request".equals(SystemReader.getInstance().getenv("GITHUB_EVENT_NAME"));
+    return StringUtils.startsWith(SystemReader.getInstance().getenv("GITHUB_EVENT_NAME"), "pull_request");
+  }
+
+  public static boolean isGithubDependabotPullRequestBranch() {
+    return StringUtils.startsWith(SystemReader.getInstance().getenv("GITHUB_REF"), "refs/heads/dependabot/");
   }
 
 }
